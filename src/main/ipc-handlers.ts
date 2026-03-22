@@ -1,22 +1,35 @@
 import { BrowserWindow, type IpcMain } from 'electron';
+import * as path from 'path';
+import * as fs from 'fs/promises';
+import { createWriteStream } from 'fs';
+import { pipeline } from 'stream/promises';
 import { MicrosoftAuth } from '../core/auth/microsoft';
 import { XboxAuth } from '../core/auth/xbox';
 import { MinecraftAuth } from '../core/auth/minecraft';
+import { OfflineAuth } from '../core/auth/offline';
 import { TokenStore } from '../core/auth/token-store';
 import { VersionManifest } from '../core/game/version-manifest';
 import { AssetManager } from '../core/game/asset-manager';
 import { GameLauncher } from '../core/game/launch';
 import { JavaDetector } from '../core/game/java-detector';
+import { InstanceManager } from '../core/game/instance';
+import { ModrinthAPI } from '../core/mods/modrinth-api';
+import { ModManager } from '../core/mods/mod-manager';
+import { getSettings, setSetting } from '../core/settings';
 import { logger } from '../core/utils/logger';
 
 const tokenStore = new TokenStore();
 const msAuth = new MicrosoftAuth();
 const xboxAuth = new XboxAuth();
 const mcAuth = new MinecraftAuth();
+const offlineAuth = new OfflineAuth();
 const versionManifest = new VersionManifest();
 const assetManager = new AssetManager();
 const gameLauncher = new GameLauncher();
 const javaDetector = new JavaDetector();
+const instanceManager = new InstanceManager();
+const modrinthAPI = new ModrinthAPI();
+const modManager = new ModManager();
 
 export function registerIpcHandlers(ipcMain: IpcMain): void {
   // ── Auth ──────────────────────────────────────────────────────
@@ -27,12 +40,21 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
 
   ipcMain.handle('auth:poll-login', async () => {
     const msToken = await msAuth.acquireTokenByDeviceCode();
+    logger.debug(`MS token acquired (first 20 chars): ${msToken.accessToken.substring(0, 20)}...`);
+
     const xblToken = await xboxAuth.authenticateWithXBL(msToken.accessToken);
+    logger.debug(`XBL token acquired — userHash: ${xblToken.userHash}, token length: ${xblToken.token.length}`);
+
     const xstsToken = await xboxAuth.authenticateWithXSTS(xblToken);
+    logger.debug(`XSTS token acquired — userHash: ${xstsToken.userHash}, token length: ${xstsToken.token.length}`);
+
     const mcToken = await mcAuth.loginWithXbox(xstsToken);
+    logger.debug(`MC token acquired — token length: ${mcToken.accessToken.length}`);
+
     const profile = await mcAuth.getProfile(mcToken.accessToken);
 
     await tokenStore.save({
+      authMode: 'microsoft',
       microsoft: msToken,
       minecraft: mcToken,
       profile,
@@ -41,9 +63,34 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
     return profile;
   });
 
+  ipcMain.handle('auth:offline-login', async (_event, username: string) => {
+    logger.info(`Starting offline login for: ${username}`);
+    const offlineProfile = offlineAuth.login(username);
+
+    // Store with dummy Microsoft/Minecraft tokens
+    await tokenStore.save({
+      authMode: 'offline',
+      microsoft: { accessToken: '', refreshToken: '', expiresAt: 0 },
+      minecraft: { accessToken: 'offline', expiresAt: Infinity },
+      profile: {
+        id: offlineProfile.id.replace(/-/g, ''),
+        name: offlineProfile.name,
+        skins: [],
+        capes: [],
+      },
+    });
+
+    return offlineProfile;
+  });
+
   ipcMain.handle('auth:refresh', async () => {
     const stored = await tokenStore.load();
     if (!stored) throw new Error('No stored session');
+
+    // Offline sessions don't need refresh — just return the stored profile
+    if (stored.authMode === 'offline') {
+      return stored.profile;
+    }
 
     const msToken = await msAuth.refreshToken(stored.microsoft.refreshToken);
     const xblToken = await xboxAuth.authenticateWithXBL(msToken.accessToken);
@@ -51,7 +98,7 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
     const mcToken = await mcAuth.loginWithXbox(xstsToken);
     const profile = await mcAuth.getProfile(mcToken.accessToken);
 
-    await tokenStore.save({ microsoft: msToken, minecraft: mcToken, profile });
+    await tokenStore.save({ authMode: 'microsoft', microsoft: msToken, minecraft: mcToken, profile });
     return profile;
   });
 
@@ -62,7 +109,8 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
 
   ipcMain.handle('auth:get-profile', async () => {
     const stored = await tokenStore.load();
-    return stored?.profile ?? null;
+    if (!stored) return null;
+    return { ...stored.profile, authMode: stored.authMode ?? 'microsoft' };
   });
 
   // ── Game ──────────────────────────────────────────────────────
@@ -87,12 +135,27 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
 
     const window = BrowserWindow.fromWebContents(event.sender);
 
+    // Auto-install the version if not already downloaded
+    const instance = await instanceManager.get(instanceId);
+    const version = await versionManifest.getVersion(instance.versionId);
+    await assetManager.downloadVersion(version, (progress) => {
+      window?.webContents.send('download:progress', progress);
+    });
+
+    const isOffline = stored.authMode === 'offline';
     const child = await gameLauncher.launch({
       instanceId,
-      accessToken: stored.minecraft.accessToken,
+      accessToken: isOffline ? 'offline' : stored.minecraft.accessToken,
       profile: stored.profile,
-      onStdout: (data) => window?.webContents.send('launch:stdout', data),
-      onStderr: (data) => window?.webContents.send('launch:stderr', data),
+      userType: isOffline ? 'legacy' : 'msa',
+      onStdout: (data) => {
+        logger.debug(`[MC] ${data.trimEnd()}`);
+        window?.webContents.send('launch:stdout', data);
+      },
+      onStderr: (data) => {
+        logger.debug(`[MC] ${data.trimEnd()}`);
+        window?.webContents.send('launch:stderr', data);
+      },
       onExit: (code) => window?.webContents.send('launch:exit', code),
     });
 
@@ -108,6 +171,34 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
     return javaDetector.detect();
   });
 
+  // ── Instances ────────────────────────────────────────────────
+  ipcMain.handle('instances:list', async () => {
+    return instanceManager.list();
+  });
+
+  ipcMain.handle('instances:create', async (_event, config) => {
+    return instanceManager.create(config);
+  });
+
+  ipcMain.handle('instances:update', async (_event, id: string, config) => {
+    return instanceManager.update(id, config);
+  });
+
+  ipcMain.handle('instances:delete', async (_event, id: string) => {
+    await instanceManager.delete(id);
+    return { success: true };
+  });
+
+  // ── Settings ────────────────────────────────────────────────
+  ipcMain.handle('settings:get', async () => {
+    return getSettings();
+  });
+
+  ipcMain.handle('settings:set-default-auth-mode', async (_event, mode: 'microsoft' | 'offline') => {
+    setSetting('defaultAuthMode', mode);
+    return { success: true };
+  });
+
   // ── Window Controls ───────────────────────────────────────────
   ipcMain.handle('window:minimize', (event) => {
     BrowserWindow.fromWebContents(event.sender)?.minimize();
@@ -120,6 +211,68 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
 
   ipcMain.handle('window:close', (event) => {
     BrowserWindow.fromWebContents(event.sender)?.close();
+  });
+
+  // ── Mods ---------------------------------------------------------------
+  ipcMain.handle('mods:search', async (_e, query: string, instanceId: string) => {
+    const instance = await instanceManager.get(instanceId);
+    return modrinthAPI.search(query, {
+      gameVersion: instance.versionId,
+      loader: instance.modLoader && instance.modLoader !== 'vanilla' ? instance.modLoader : undefined,
+      projectType: 'mod',
+    });
+  });
+
+  ipcMain.handle('mods:list', async (_e, instanceId: string) => {
+    return modManager.list(instanceId);
+  });
+
+  ipcMain.handle('mods:get-versions', async (_e, projectId: string, gameVersion: string, loader?: string) => {
+    const loaders = loader && loader !== 'vanilla' ? [loader] : undefined;
+    return modrinthAPI.getVersions(projectId, {
+      gameVersions: [gameVersion],
+      loaders,
+    });
+  });
+
+  ipcMain.handle('mods:install', async (_e, instanceId: string, projectId: string, versionId: string, modName: string, modSlug: string) => {
+    const version = await modrinthAPI.getVersion(versionId);
+    const primaryFile = version.files.find((f) => f.primary) ?? version.files[0];
+    if (!primaryFile) throw new Error('No file found for version ' + versionId);
+
+    const instance = await instanceManager.get(instanceId);
+    const dest = path.join(instance.gameDirectory, 'mods', primaryFile.filename);
+
+    // Download the JAR using got.stream piped to a write stream
+    const { default: got } = await import('got');
+    await pipeline(got.stream(primaryFile.url), createWriteStream(dest));
+
+    const installedMod = {
+      id: projectId,
+      slug: modSlug,
+      name: modName,
+      versionId,
+      versionNumber: version.version_number,
+      fileName: primaryFile.filename,
+      sha1: primaryFile.hashes.sha1,
+      installedAt: Date.now(),
+      enabled: true,
+    };
+    await modManager.add(instanceId, installedMod);
+    logger.info(`Installed mod "${modName}" (${versionId}) into instance ${instanceId}`);
+    return installedMod;
+  });
+
+  ipcMain.handle('mods:remove', async (_e, instanceId: string, projectId: string) => {
+    const mod = await modManager.get(instanceId, projectId);
+    if (mod) {
+      const instance = await instanceManager.get(instanceId);
+      const filePath = path.join(instance.gameDirectory, 'mods', mod.fileName);
+      await fs.rm(filePath, { force: true });
+      await modManager.remove(instanceId, projectId);
+      logger.info(`Removed mod "${mod.name}" from instance ${instanceId}`);
+    }
+    return { success: true };
   });
 
   logger.info('IPC handlers registered');

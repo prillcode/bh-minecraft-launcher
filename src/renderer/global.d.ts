@@ -16,13 +16,19 @@ interface DeviceCodeResponse {
   expiresIn: number;
 }
 
+interface OfflineProfile {
+  name: string;
+  id: string;
+}
+
 interface LauncherAPI {
   auth: {
     startLogin(): Promise<DeviceCodeResponse>;
     pollLogin(): Promise<MinecraftProfile>;
     refresh(): Promise<MinecraftProfile>;
     logout(): Promise<{ success: boolean }>;
-    getProfile(): Promise<MinecraftProfile | null>;
+    getProfile(): Promise<(MinecraftProfile & { authMode?: 'microsoft' | 'offline' }) | null>;
+    offlineLogin(username: string): Promise<OfflineProfile>;
   };
   game: {
     getVersions(): Promise<{
@@ -44,21 +50,21 @@ interface LauncherAPI {
     }>>;
   };
   instances: {
-    list(): Promise<Array<{
-      id: string;
-      name: string;
-      versionId: string;
-      modLoader?: string;
-      lastPlayed?: number;
-    }>>;
-    create(config: unknown): Promise<unknown>;
-    update(id: string, config: unknown): Promise<unknown>;
-    delete(id: string): Promise<void>;
+    list(): Promise<InstanceInfo[]>;
+    create(config: InstanceConfig): Promise<InstanceInfo>;
+    update(id: string, config: Partial<InstanceConfig>): Promise<InstanceInfo>;
+    delete(id: string): Promise<{ success: boolean }>;
   };
   mods: {
-    search(query: string): Promise<unknown>;
-    install(instanceId: string, modId: string): Promise<unknown>;
-    remove(instanceId: string, modId: string): Promise<unknown>;
+    search(query: string, instanceId: string): Promise<ModSearchResponse>;
+    install(instanceId: string, projectId: string, versionId: string, modName: string, modSlug: string): Promise<InstalledModInfo>;
+    remove(instanceId: string, projectId: string): Promise<{ success: boolean }>;
+    list(instanceId: string): Promise<InstalledModInfo[]>;
+    getVersions(projectId: string, gameVersion: string, loader?: string): Promise<ModVersionInfo[]>;
+  };
+  settings: {
+    get(): Promise<{ defaultAuthMode: 'microsoft' | 'offline' }>;
+    setDefaultAuthMode(mode: 'microsoft' | 'offline'): Promise<{ success: boolean }>;
   };
   window: {
     minimize(): Promise<void>;
@@ -72,6 +78,69 @@ interface LauncherAPI {
 declare global {
   interface Window {
     launcher: LauncherAPI;
+  }
+
+  interface InstalledModInfo {
+    id: string;
+    slug: string;
+    name: string;
+    versionId: string;
+    versionNumber: string;
+    fileName: string;
+    sha1: string;
+    installedAt: number;
+    enabled: boolean;
+  }
+
+  interface ModSearchHit {
+    slug: string;
+    title: string;
+    description: string;
+    categories: string[];
+    downloads: number;
+    icon_url: string | null;
+    project_type: string;
+    versions: string[];
+  }
+
+  interface ModSearchResponse {
+    hits: ModSearchHit[];
+    offset: number;
+    limit: number;
+    total_hits: number;
+  }
+
+  interface ModVersionFile {
+    url: string;
+    filename: string;
+    size: number;
+    primary: boolean;
+  }
+
+  interface ModVersionInfo {
+    id: string;
+    project_id: string;
+    name: string;
+    version_number: string;
+    game_versions: string[];
+    loaders: string[];
+    files: ModVersionFile[];
+  }
+
+  interface InstanceConfig {
+    name: string;
+    versionId: string;
+    serverAutoConnect?: { host: string; port: number };
+  }
+
+  interface InstanceInfo {
+    id: string;
+    name: string;
+    versionId: string;
+    modLoader?: string;
+    lastPlayed?: number;
+    serverAutoConnect?: { host: string; port: number };
+    createdAt: number;
   }
 }
 

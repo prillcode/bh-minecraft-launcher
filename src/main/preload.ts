@@ -17,6 +17,8 @@ contextBridge.exposeInMainWorld('launcher', {
     logout: () => ipcRenderer.invoke('auth:logout'),
     /** Get current MC profile (username, uuid, skin) */
     getProfile: () => ipcRenderer.invoke('auth:get-profile'),
+    /** Log in with an offline username (for offline-mode servers) */
+    offlineLogin: (username: string) => ipcRenderer.invoke('auth:offline-login', username),
   },
 
   // ── Game ──────────────────────────────────────────────────────
@@ -43,11 +45,19 @@ contextBridge.exposeInMainWorld('launcher', {
 
   // ── Mods ──────────────────────────────────────────────────────
   mods: {
-    search: (query: string) => ipcRenderer.invoke('mods:search', query),
-    install: (instanceId: string, modId: string) =>
-      ipcRenderer.invoke('mods:install', instanceId, modId),
-    remove: (instanceId: string, modId: string) =>
-      ipcRenderer.invoke('mods:remove', instanceId, modId),
+    search: (query: string, instanceId: string) => ipcRenderer.invoke('mods:search', query, instanceId),
+    install: (instanceId: string, projectId: string, versionId: string, modName: string, modSlug: string) =>
+      ipcRenderer.invoke('mods:install', instanceId, projectId, versionId, modName, modSlug),
+    remove: (instanceId: string, projectId: string) => ipcRenderer.invoke('mods:remove', instanceId, projectId),
+    list: (instanceId: string) => ipcRenderer.invoke('mods:list', instanceId),
+    getVersions: (projectId: string, gameVersion: string, loader?: string) =>
+      ipcRenderer.invoke('mods:get-versions', projectId, gameVersion, loader),
+  },
+
+  // ── Settings ────────────────────────────────────────────────
+  settings: {
+    get: () => ipcRenderer.invoke('settings:get'),
+    setDefaultAuthMode: (mode: string) => ipcRenderer.invoke('settings:set-default-auth-mode', mode),
   },
 
   // ── Window Controls ───────────────────────────────────────────
