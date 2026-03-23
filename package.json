@@ -3,7 +3,10 @@
   "version": "0.5.1",
   "description": "Custom Minecraft launcher with Microsoft auth, multi-instance support, and mod management",
   "main": "dist/main/index.js",
-  "author": "AP Dev Solutions LLC",
+  "author": {
+    "name": "AP Dev Solutions LLC",
+    "email": "prillcode@gmail.com"
+  },
   "license": "MIT",
   "packageManager": "pnpm@9.15.0",
   "scripts": {
