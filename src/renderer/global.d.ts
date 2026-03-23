@@ -63,8 +63,12 @@ interface LauncherAPI {
     getVersions(projectId: string, gameVersion: string, loader?: string): Promise<ModVersionInfo[]>;
   };
   settings: {
-    get(): Promise<{ defaultAuthMode: 'microsoft' | 'offline' }>;
+    get(): Promise<LauncherSettings>;
+    set(key: keyof LauncherSettings, value: LauncherSettings[keyof LauncherSettings]): Promise<{ success: boolean }>;
     setDefaultAuthMode(mode: 'microsoft' | 'offline'): Promise<{ success: boolean }>;
+    getAppInfo(): Promise<{ version: string; dataPath: string }>;
+    openDataFolder(): Promise<{ success: boolean }>;
+    clearCache(): Promise<{ success: boolean }>;
   };
   window: {
     minimize(): Promise<void>;
@@ -78,6 +82,18 @@ interface LauncherAPI {
 declare global {
   interface Window {
     launcher: LauncherAPI;
+  }
+
+  interface LauncherSettings {
+    defaultAuthMode: 'microsoft' | 'offline';
+    defaultMinMemory: number;
+    defaultMaxMemory: number;
+    javaPath: string;
+    closeOnLaunch: boolean;
+    defaultResolutionWidth: number;
+    defaultResolutionHeight: number;
+    blockhavenDefaultHost: string;
+    blockhavenDefaultPort: number;
   }
 
   interface InstalledModInfo {

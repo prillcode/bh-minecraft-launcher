@@ -57,7 +57,11 @@ contextBridge.exposeInMainWorld('launcher', {
   // ── Settings ────────────────────────────────────────────────
   settings: {
     get: () => ipcRenderer.invoke('settings:get'),
+    set: (key: string, value: unknown) => ipcRenderer.invoke('settings:set', key, value),
     setDefaultAuthMode: (mode: string) => ipcRenderer.invoke('settings:set-default-auth-mode', mode),
+    getAppInfo: () => ipcRenderer.invoke('settings:get-app-info'),
+    openDataFolder: () => ipcRenderer.invoke('settings:open-data-folder'),
+    clearCache: () => ipcRenderer.invoke('settings:clear-cache'),
   },
 
   // ── Window Controls ───────────────────────────────────────────

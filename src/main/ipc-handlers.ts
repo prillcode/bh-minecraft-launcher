@@ -1,4 +1,4 @@
-import { BrowserWindow, type IpcMain } from 'electron';
+import { BrowserWindow, shell, app, type IpcMain } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { createWriteStream } from 'fs';
@@ -16,6 +16,8 @@ import { InstanceManager } from '../core/game/instance';
 import { ModrinthAPI } from '../core/mods/modrinth-api';
 import { ModManager } from '../core/mods/mod-manager';
 import { getSettings, setSetting } from '../core/settings';
+import type { LauncherSettings } from '../core/settings';
+import { getLauncherPaths } from '../core/utils/paths';
 import { logger } from '../core/utils/logger';
 
 const tokenStore = new TokenStore();
@@ -196,6 +198,33 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
 
   ipcMain.handle('settings:set-default-auth-mode', async (_event, mode: 'microsoft' | 'offline') => {
     setSetting('defaultAuthMode', mode);
+    return { success: true };
+  });
+
+  ipcMain.handle('settings:set', async (_event, key: keyof LauncherSettings, value: unknown) => {
+    setSetting(key, value as LauncherSettings[typeof key]);
+    return { success: true };
+  });
+
+  ipcMain.handle('settings:get-app-info', async () => {
+    const paths = getLauncherPaths();
+    return {
+      version: app.getVersion(),
+      dataPath: paths.root,
+    };
+  });
+
+  ipcMain.handle('settings:open-data-folder', async () => {
+    const paths = getLauncherPaths();
+    await shell.openPath(paths.root);
+    return { success: true };
+  });
+
+  ipcMain.handle('settings:clear-cache', async () => {
+    const paths = getLauncherPaths();
+    await fs.rm(paths.temp, { recursive: true, force: true });
+    await fs.rm(paths.natives, { recursive: true, force: true });
+    logger.info('Cache cleared (temp + natives)');
     return { success: true };
   });
 
