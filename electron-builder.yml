@@ -2,6 +2,7 @@ appId: com.apdev.blockhaven-launcher
 productName: BlockHaven Launcher
 artifactName: BlockHaven-Launcher-${version}-${arch}.${ext}
 copyright: Copyright © 2026 AP Dev Solutions LLC
+publish: never
 
 directories:
   output: release
