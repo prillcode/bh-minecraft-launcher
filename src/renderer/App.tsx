@@ -5,6 +5,7 @@ import { Sidebar } from './components/layout/Sidebar';
 import { StatusBar } from './components/layout/StatusBar';
 import { LoginScreen } from './components/auth/LoginScreen';
 import { InstanceList } from './components/instances/InstanceList';
+import { ModsTab } from './components/mods/ModsTab';
 import { useAuthStore } from './stores/auth-store';
 
 export function App() {
@@ -33,7 +34,7 @@ export function App() {
             <Routes>
               <Route path="/" element={<Navigate to="/instances" replace />} />
               <Route path="/instances" element={<InstanceList />} />
-              <Route path="/mods" element={<div>Mod Browser (coming soon)</div>} />
+              <Route path="/mods" element={<ModsTab />} />
               <Route path="/settings" element={<div>Settings (coming soon)</div>} />
             </Routes>
           </main>
