@@ -54,6 +54,11 @@ contextBridge.exposeInMainWorld('launcher', {
       ipcRenderer.invoke('mods:get-versions', projectId, gameVersion, loader),
   },
 
+  // ── Java ──────────────────────────────────────────────────────
+  java: {
+    provision: (component: string) => ipcRenderer.invoke('java:provision', component),
+  },
+
   // ── Settings ────────────────────────────────────────────────
   settings: {
     get: () => ipcRenderer.invoke('settings:get'),

@@ -12,6 +12,7 @@ import { VersionManifest } from '../core/game/version-manifest';
 import { AssetManager } from '../core/game/asset-manager';
 import { GameLauncher } from '../core/game/launch';
 import { JavaDetector } from '../core/game/java-detector';
+import { JavaProvisioner } from '../core/game/java-provisioner';
 import { InstanceManager } from '../core/game/instance';
 import { ModrinthAPI } from '../core/mods/modrinth-api';
 import { ModManager } from '../core/mods/mod-manager';
@@ -29,6 +30,7 @@ const versionManifest = new VersionManifest();
 const assetManager = new AssetManager();
 const gameLauncher = new GameLauncher();
 const javaDetector = new JavaDetector();
+const javaProvisioner = new JavaProvisioner();
 const instanceManager = new InstanceManager();
 const modrinthAPI = new ModrinthAPI();
 const modManager = new ModManager();
@@ -140,6 +142,15 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
     // Auto-install the version if not already downloaded
     const instance = await instanceManager.get(instanceId);
     const version = await versionManifest.getVersion(instance.versionId);
+
+    // Auto-provision JRE if no instance-level java override
+    if (!instance.javaPath) {
+      const component = version.javaVersion?.component ?? 'java-runtime-delta';
+      await javaProvisioner.provision(component, (progress) => {
+        window?.webContents.send('download:progress', progress);
+      });
+    }
+
     await assetManager.downloadVersion(version, (progress) => {
       window?.webContents.send('download:progress', progress);
     });
@@ -171,6 +182,15 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
 
   ipcMain.handle('game:detect-java', async () => {
     return javaDetector.detect();
+  });
+
+  // ── Java ──────────────────────────────────────────────────────
+  ipcMain.handle('java:provision', async (event, component: string) => {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    const javaExe = await javaProvisioner.provision(component, (progress) => {
+      window?.webContents.send('download:progress', progress);
+    });
+    return { javaExe };
   });
 
   // ── Instances ────────────────────────────────────────────────

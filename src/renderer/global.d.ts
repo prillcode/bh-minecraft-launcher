@@ -62,6 +62,9 @@ interface LauncherAPI {
     list(instanceId: string): Promise<InstalledModInfo[]>;
     getVersions(projectId: string, gameVersion: string, loader?: string): Promise<ModVersionInfo[]>;
   };
+  java: {
+    provision(component: string): Promise<{ javaExe: string }>;
+  };
   settings: {
     get(): Promise<LauncherSettings>;
     set(key: keyof LauncherSettings, value: LauncherSettings[keyof LauncherSettings]): Promise<{ success: boolean }>;

@@ -3,6 +3,7 @@ import { promisify } from 'util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import type { JavaRuntime, VersionDetail } from './types';
+import { getLauncherPaths } from '../utils/paths';
 import { logger } from '../utils/logger';
 
 const execAsync = promisify(exec);
@@ -60,7 +61,19 @@ export class JavaDetector {
   private async findCandidates(): Promise<string[]> {
     const candidates: string[] = [];
 
-    // JAVA_HOME
+    // ── Launcher-managed JRE (highest priority) ───────────────────
+    try {
+      const { java: javaDir } = getLauncherPaths();
+      const entries = await fs.readdir(javaDir);
+      for (const component of entries) {
+        const exe = process.platform === 'win32' ? 'java.exe' : 'java';
+        candidates.push(path.join(javaDir, component, 'bin', exe));
+      }
+    } catch {
+      // No launcher-managed JRE yet — that's fine
+    }
+
+    // ── JAVA_HOME ─────────────────────────────────────────────────
     if (process.env.JAVA_HOME) {
       candidates.push(path.join(process.env.JAVA_HOME, 'bin', 'java'));
     }
