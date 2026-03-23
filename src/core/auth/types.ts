@@ -45,8 +45,15 @@ export interface MinecraftProfile {
   }>;
 }
 
+// ── Offline Mode ───────────────────────────────────────────────
+export interface OfflineProfile {
+  name: string;
+  id: string; // UUID (dashed format)
+}
+
 // ── Combined session stored on disk ─────────────────────────────
 export interface StoredSession {
+  authMode: 'microsoft' | 'offline';
   microsoft: MicrosoftTokenResponse;
   minecraft: MinecraftTokenResponse;
   profile: MinecraftProfile;

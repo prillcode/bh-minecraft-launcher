@@ -1,4 +1,4 @@
-import got from 'got';
+import got, { HTTPError } from 'got';
 import type { XBLToken, XSTSToken } from './types';
 import { logger } from '../utils/logger';
 
@@ -18,29 +18,36 @@ export class XboxAuth {
   async authenticateWithXBL(msAccessToken: string): Promise<XBLToken> {
     logger.info('Exchanging MS token for XBL token');
 
-    const response = await got.post(XBL_AUTH_URL, {
-      json: {
-        Properties: {
-          AuthMethod: 'RPS',
-          SiteName: 'user.auth.xboxlive.com',
-          RpsTicket: `d=${msAccessToken}`,
+    try {
+      const response = await got.post(XBL_AUTH_URL, {
+        json: {
+          Properties: {
+            AuthMethod: 'RPS',
+            SiteName: 'user.auth.xboxlive.com',
+            RpsTicket: `d=${msAccessToken}`,
+          },
+          RelyingParty: 'http://auth.xboxlive.com',
+          TokenType: 'JWT',
         },
-        RelyingParty: 'http://auth.xboxlive.com',
-        TokenType: 'JWT',
-      },
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-    }).json<{
-      Token: string;
-      DisplayClaims: { xui: Array<{ uhs: string }> };
-    }>();
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+      }).json<{
+        Token: string;
+        DisplayClaims: { xui: Array<{ uhs: string }> };
+      }>();
 
-    return {
-      token: response.Token,
-      userHash: response.DisplayClaims.xui[0].uhs,
-    };
+      return {
+        token: response.Token,
+        userHash: response.DisplayClaims.xui[0].uhs,
+      };
+    } catch (err) {
+      if (err instanceof HTTPError) {
+        logger.error(`authenticateWithXBL failed — status: ${err.response.statusCode}, body: ${err.response.body}`);
+      }
+      throw err;
+    }
   }
 
   /**
@@ -49,27 +56,34 @@ export class XboxAuth {
   async authenticateWithXSTS(xblToken: XBLToken): Promise<XSTSToken> {
     logger.info('Exchanging XBL token for XSTS token');
 
-    const response = await got.post(XSTS_AUTH_URL, {
-      json: {
-        Properties: {
-          SandboxId: 'RETAIL',
-          UserTokens: [xblToken.token],
+    try {
+      const response = await got.post(XSTS_AUTH_URL, {
+        json: {
+          Properties: {
+            SandboxId: 'RETAIL',
+            UserTokens: [xblToken.token],
+          },
+          RelyingParty: 'rp://api.minecraftservices.com/',
+          TokenType: 'JWT',
         },
-        RelyingParty: 'rp://api.minecraftservices.com/',
-        TokenType: 'JWT',
-      },
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-    }).json<{
-      Token: string;
-      DisplayClaims: { xui: Array<{ uhs: string }> };
-    }>();
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+      }).json<{
+        Token: string;
+        DisplayClaims: { xui: Array<{ uhs: string }> };
+      }>();
 
-    return {
-      token: response.Token,
-      userHash: response.DisplayClaims.xui[0].uhs,
-    };
+      return {
+        token: response.Token,
+        userHash: response.DisplayClaims.xui[0].uhs,
+      };
+    } catch (err) {
+      if (err instanceof HTTPError) {
+        logger.error(`authenticateWithXSTS failed — status: ${err.response.statusCode}, body: ${err.response.body}`);
+      }
+      throw err;
+    }
   }
 }
