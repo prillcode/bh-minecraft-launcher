@@ -35,8 +35,6 @@ jobs:
         run: |
           echo "MS_CLIENT_ID=${{ secrets.MS_CLIENT_ID }}" >> .env
           echo "LOG_LEVEL=info" >> .env
-          echo "BLOCKHAVEN_SERVER_HOST=${{ secrets.BLOCKHAVEN_SERVER_HOST || 'play.blockhaven.net' }}" >> .env
-          echo "BLOCKHAVEN_SERVER_PORT=${{ secrets.BLOCKHAVEN_SERVER_PORT || '25565' }}" >> .env
 
       - name: Build
         run: pnpm build

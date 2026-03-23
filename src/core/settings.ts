@@ -8,8 +8,6 @@ export interface LauncherSettings {
   closeOnLaunch: boolean;
   defaultResolutionWidth: number;
   defaultResolutionHeight: number;
-  blockhavenDefaultHost: string;
-  blockhavenDefaultPort: number;
 }
 
 const store = new Store<LauncherSettings>({
@@ -22,8 +20,6 @@ const store = new Store<LauncherSettings>({
     closeOnLaunch: false,
     defaultResolutionWidth: 854,
     defaultResolutionHeight: 480,
-    blockhavenDefaultHost: '',
-    blockhavenDefaultPort: 25565,
   },
 });
 
@@ -36,8 +32,6 @@ export function getSettings(): LauncherSettings {
     closeOnLaunch: store.get('closeOnLaunch'),
     defaultResolutionWidth: store.get('defaultResolutionWidth'),
     defaultResolutionHeight: store.get('defaultResolutionHeight'),
-    blockhavenDefaultHost: store.get('blockhavenDefaultHost'),
-    blockhavenDefaultPort: store.get('blockhavenDefaultPort'),
   };
 }
 

@@ -95,8 +95,6 @@ declare global {
     closeOnLaunch: boolean;
     defaultResolutionWidth: number;
     defaultResolutionHeight: number;
-    blockhavenDefaultHost: string;
-    blockhavenDefaultPort: number;
   }
 
   interface InstalledModInfo {
