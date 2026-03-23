@@ -118,6 +118,7 @@ export interface LaunchOptions {
   instanceId: string;
   accessToken: string;
   profile: { id: string; name: string };
+  userType?: 'msa' | 'legacy';
   onStdout?: (data: string) => void;
   onStderr?: (data: string) => void;
   onExit?: (code: number | null) => void;

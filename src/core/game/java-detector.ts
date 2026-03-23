@@ -124,7 +124,7 @@ export class JavaDetector {
       return null;
     }
 
-    const { stderr } = await execAsync(`"${javaPath}" -version 2>&1`);
+    const { stderr } = await execAsync(`"${javaPath}" -version`);
     const versionMatch = stderr.match(/version "(\d+)(?:\.(\d+))?/);
     if (!versionMatch) return null;
 

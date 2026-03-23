@@ -1,16 +1,12 @@
 import React, { useEffect, useState } from 'react';
-
-interface Instance {
-  id: string;
-  name: string;
-  versionId: string;
-  modLoader?: string;
-  lastPlayed?: number;
-}
+import { CreateInstanceModal } from './CreateInstanceModal';
+import { EditInstanceModal } from './EditInstanceModal';
 
 export function InstanceList() {
-  const [instances, setInstances] = useState<Instance[]>([]);
+  const [instances, setInstances] = useState<InstanceInfo[]>([]);
   const [launching, setLaunching] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingInstance, setEditingInstance] = useState<InstanceInfo | null>(null);
 
   useEffect(() => {
     window.launcher.instances.list().then(setInstances);
@@ -27,18 +23,35 @@ export function InstanceList() {
     }
   };
 
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    await window.launcher.instances.delete(id);
+    setInstances((prev) => prev.filter((i) => i.id !== id));
+  };
+
+  const handleCreated = (instance: InstanceInfo) => {
+    setInstances((prev) => [instance, ...prev]);
+  };
+
+  const handleUpdated = (updated: InstanceInfo) => {
+    setInstances((prev) => prev.map((i) => i.id === updated.id ? updated : i));
+  };
+
   return (
     <div className="instances">
       <div className="instances__header">
         <h2>Instances</h2>
-        <button className="btn btn--primary" onClick={() => {/* TODO: open create modal */}}>
+        <button className="btn btn--primary" onClick={() => setShowCreateModal(true)}>
           + New Instance
         </button>
       </div>
 
       {instances.length === 0 ? (
         <div className="instances__empty">
-          <p>No instances yet. Create one to get started!</p>
+          <p>No instances yet.</p>
+          <button className="btn btn--primary" style={{ marginTop: '16px' }} onClick={() => setShowCreateModal(true)}>
+            Create your first instance
+          </button>
         </div>
       ) : (
         <div className="instances__grid">
@@ -51,6 +64,11 @@ export function InstanceList() {
                   {inst.versionId}
                   {inst.modLoader && inst.modLoader !== 'vanilla' && ` · ${inst.modLoader}`}
                 </span>
+                {inst.serverAutoConnect && (
+                  <span className="instance-card__server">
+                    {inst.serverAutoConnect.host}:{inst.serverAutoConnect.port}
+                  </span>
+                )}
                 {inst.lastPlayed && (
                   <span className="instance-card__last-played">
                     Last played {new Date(inst.lastPlayed).toLocaleDateString()}
@@ -58,15 +76,46 @@ export function InstanceList() {
                 )}
               </div>
               <button
+                className="instance-card__edit"
+                onClick={() => setEditingInstance(inst)}
+                disabled={launching !== null}
+                aria-label={`Edit ${inst.name}`}
+              >
+                ✎
+              </button>
+              <button
                 className="instance-card__play"
                 onClick={() => handleLaunch(inst.id)}
                 disabled={launching !== null}
               >
                 {launching === inst.id ? '⏳' : '▶'}
               </button>
+              <button
+                className="instance-card__delete"
+                onClick={() => handleDelete(inst.id, inst.name)}
+                disabled={launching !== null}
+                aria-label={`Delete ${inst.name}`}
+              >
+                ✕
+              </button>
             </div>
           ))}
         </div>
+      )}
+
+      {showCreateModal && (
+        <CreateInstanceModal
+          onClose={() => setShowCreateModal(false)}
+          onCreate={handleCreated}
+        />
+      )}
+
+      {editingInstance && (
+        <EditInstanceModal
+          instance={editingInstance}
+          onClose={() => setEditingInstance(null)}
+          onUpdate={handleUpdated}
+        />
       )}
     </div>
   );

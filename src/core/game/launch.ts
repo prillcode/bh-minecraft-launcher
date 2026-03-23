@@ -2,6 +2,7 @@ import { spawn, type ChildProcess } from 'child_process';
 import * as path from 'path';
 import { getLauncherPaths } from '../utils/paths';
 import { JavaDetector } from './java-detector';
+import { InstanceManager } from './instance';
 import { VersionManifest } from './version-manifest';
 import type { LaunchOptions, VersionDetail, Instance } from './types';
 import { logger } from '../utils/logger';
@@ -20,6 +21,7 @@ export class GameLauncher {
   private activeProcess: ChildProcess | null = null;
   private versionManifest = new VersionManifest();
   private javaDetector = new JavaDetector();
+  private instanceManager = new InstanceManager();
 
   async launch(options: LaunchOptions): Promise<ChildProcess> {
     const paths = getLauncherPaths();
@@ -98,8 +100,10 @@ export class GameLauncher {
       '${assets_index_name}': version.assets,
       '${auth_uuid}': options.profile.id,
       '${auth_access_token}': options.accessToken,
-      '${user_type}': 'msa',
+      '${user_type}': options.userType ?? 'msa',
       '${version_type}': version.type,
+      '${clientid}': '',
+      '${auth_xuid}': '',
     };
 
     if (version.arguments?.game) {
@@ -135,17 +139,17 @@ export class GameLauncher {
 
     // Add version-specific JVM args
     if (version.arguments?.jvm) {
-      for (const arg of version.arguments.jvm) {
-        if (typeof arg === 'string') {
-          args.push(
-            this.substitute(arg, {
-              '${natives_directory}': path.join(paths.natives, version.id),
-              '${launcher_name}': 'blockhaven-launcher',
-              '${launcher_version}': '0.1.0',
-              '${classpath}': '', // Handled separately
-            }),
-          );
-        }
+      const stringArgs = version.arguments.jvm.filter((a): a is string => typeof a === 'string');
+      for (let i = 0; i < stringArgs.length; i++) {
+        const arg = stringArgs[i];
+        // Skip classpath placeholder and the -cp flag that precedes it — handled in allArgs
+        if (arg.includes('${classpath}')) continue;
+        if (arg === '-cp' && stringArgs[i + 1]?.includes('${classpath}')) { i++; continue; }
+        args.push(this.substitute(arg, {
+          '${natives_directory}': path.join(paths.natives, version.id),
+          '${launcher_name}': 'blockhaven-launcher',
+          '${launcher_version}': '0.1.0',
+        }));
       }
     }
 
@@ -154,7 +158,7 @@ export class GameLauncher {
       args.push(...instance.jvmArgs);
     }
 
-    return args.filter((a) => a && !a.includes('${classpath}'));
+    return args;
   }
 
   private shouldIncludeLibrary(lib: { rules?: Array<{ action: string; os?: { name?: string } }> }): boolean {
@@ -184,16 +188,6 @@ export class GameLauncher {
   }
 
   private async loadInstance(id: string): Promise<Instance> {
-    // TODO: Load from instance store on disk
-    // Placeholder with sensible defaults
-    return {
-      id,
-      name: 'Default',
-      versionId: '1.21.4',
-      minMemoryMb: 512,
-      maxMemoryMb: 2048,
-      gameDirectory: path.join(getLauncherPaths().instances, id),
-      createdAt: Date.now(),
-    };
+    return this.instanceManager.get(id);
   }
 }
