@@ -12,6 +12,7 @@ export interface LauncherPaths {
   assets: string;         // Shared assets (indexes + objects)
   natives: string;        // Extracted native libs per version
   instances: string;      // Per-instance game directories
+  java: string;           // Provisioned JRE runtimes
   logs: string;
   temp: string;
 }
@@ -34,6 +35,7 @@ export function getLauncherPaths(): LauncherPaths {
     assets: path.join(root, 'assets'),
     natives: path.join(root, 'natives'),
     instances: path.join(root, 'instances'),
+    java: path.join(root, 'java'),
     logs: path.join(root, 'logs'),
     temp: path.join(root, 'temp'),
   };
@@ -52,6 +54,7 @@ export function getLauncherPathsCustomRoot(root: string): LauncherPaths {
     assets: path.join(root, 'assets'),
     natives: path.join(root, 'natives'),
     instances: path.join(root, 'instances'),
+    java: path.join(root, 'java'),
     logs: path.join(root, 'logs'),
     temp: path.join(root, 'temp'),
   };
