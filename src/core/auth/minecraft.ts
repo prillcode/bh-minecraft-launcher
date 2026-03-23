@@ -15,6 +15,7 @@ export class MinecraftAuth {
    */
   async loginWithXbox(xstsToken: XSTSToken): Promise<MinecraftTokenResponse> {
     logger.info('Exchanging XSTS token for Minecraft access token');
+    logger.debug(`XSTS userHash: ${xstsToken.userHash}, token prefix: ${xstsToken.token.substring(0, 20)}...`);
 
     try {
       const response = await got.post(MC_AUTH_URL, {

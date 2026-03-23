@@ -38,10 +38,12 @@ export class XboxAuth {
         DisplayClaims: { xui: Array<{ uhs: string }> };
       }>();
 
-      return {
+      const xblToken = {
         token: response.Token,
         userHash: response.DisplayClaims.xui[0].uhs,
       };
+      logger.debug(`XBL token acquired — userHash: ${xblToken.userHash}, token prefix: ${xblToken.token.substring(0, 20)}...`);
+      return xblToken;
     } catch (err) {
       if (err instanceof HTTPError) {
         logger.error(`authenticateWithXBL failed — status: ${err.response.statusCode}, body: ${err.response.body}`);
@@ -75,10 +77,12 @@ export class XboxAuth {
         DisplayClaims: { xui: Array<{ uhs: string }> };
       }>();
 
-      return {
+      const xstsToken = {
         token: response.Token,
         userHash: response.DisplayClaims.xui[0].uhs,
       };
+      logger.debug(`XSTS token acquired — userHash: ${xstsToken.userHash}, token prefix: ${xstsToken.token.substring(0, 20)}...`);
+      return xstsToken;
     } catch (err) {
       if (err instanceof HTTPError) {
         logger.error(`authenticateWithXSTS failed — status: ${err.response.statusCode}, body: ${err.response.body}`);
