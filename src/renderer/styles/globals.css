@@ -677,6 +677,25 @@ body {
   border-color: var(--text-muted);
 }
 
+.btn--danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.btn--danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn--sm {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
 /* ── Loader ────────────────────────────────────────────────────── */
 .loader {
   width: 24px;
@@ -721,6 +740,16 @@ body {
 .mod-card__desc { font-size: 12px; color: var(--text-muted, #888); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mod-card__downloads { font-size: 11px; color: var(--text-muted, #888); }
 .mod-card__install { flex-shrink: 0; }
+
+/* ── Installed Mods Panel ──────────────────────────────────────── */
+.installed-mods { padding: 16px 0; border-top: 1px solid var(--border, #333); margin-top: 24px; }
+.installed-mods__title { font-size: 14px; font-weight: 600; margin: 0 0 12px 0; }
+.installed-mods__empty { color: var(--text-muted, #888); font-size: 13px; }
+.installed-mods__list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.installed-mod-row { display: flex; align-items: center; gap: 12px; padding: 8px 12px; background: var(--bg-secondary, #1e1e1e); border: 1px solid var(--border, #333); border-radius: 6px; }
+.installed-mod-row__info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.installed-mod-row__name { font-size: 13px; font-weight: 500; }
+.installed-mod-row__version { font-size: 11px; color: var(--text-muted, #888); }
 
 /* ── Scrollbar ─────────────────────────────────────────────────── */
 ::-webkit-scrollbar {

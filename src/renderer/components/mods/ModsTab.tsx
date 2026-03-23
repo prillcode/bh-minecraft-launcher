@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { VersionPickerModal } from './VersionPickerModal';
+import { InstalledModsPanel } from './InstalledModsPanel';
 
 interface ModCardProps {
   mod: ModSearchHit;
@@ -36,6 +37,7 @@ export function ModsTab() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [installingId, setInstallingId] = useState<string | null>(null);
   const [versionPickerMod, setVersionPickerMod] = useState<ModSearchHit | null>(null);
+  const [installedRefreshKey, setInstalledRefreshKey] = useState(0);
 
   useEffect(() => {
     window.launcher.instances.list().then((list) => {
@@ -73,7 +75,11 @@ export function ModsTab() {
         <select
           className="mods__instance-select"
           value={selectedInstanceId}
-          onChange={(e) => { setSelectedInstanceId(e.target.value); setResults([]); }}
+          onChange={(e) => {
+            setSelectedInstanceId(e.target.value);
+            setResults([]);
+            setInstalledRefreshKey((k) => k + 1);
+          }}
         >
           <option value="">— Select an instance —</option>
           {instances.map((i) => (
@@ -122,7 +128,17 @@ export function ModsTab() {
           instanceId={selectedInstanceId}
           instances={instances}
           onClose={() => setVersionPickerMod(null)}
-          onInstalled={() => setVersionPickerMod(null)}
+          onInstalled={() => {
+            setVersionPickerMod(null);
+            setInstalledRefreshKey((k) => k + 1);
+          }}
+        />
+      )}
+
+      {selectedInstanceId && (
+        <InstalledModsPanel
+          instanceId={selectedInstanceId}
+          refreshKey={installedRefreshKey}
         />
       )}
     </div>
