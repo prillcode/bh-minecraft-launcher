@@ -190,7 +190,36 @@ export function SettingsPage() {
         </div>
       </section>
 
-      {/* 4. About */}
+      {/* 4. BlockHaven */}
+      <section className="settings__section">
+        <h2 className="settings__section-title">BlockHaven</h2>
+
+        <div className="settings__row">
+          <span className="settings__label">Default Host</span>
+          <input
+            type="text"
+            value={settings.blockhavenDefaultHost}
+            onChange={e => save('blockhavenDefaultHost', e.target.value)}
+            style={{ flex: 1, ...inputStyle }}
+          />
+        </div>
+
+        <div className="settings__row">
+          <span className="settings__label">Default Port</span>
+          <input
+            type="number"
+            value={settings.blockhavenDefaultPort}
+            onChange={e => save('blockhavenDefaultPort', +e.target.value)}
+            style={{ width: 80, ...inputStyle }}
+          />
+        </div>
+
+        <p className="settings__hint" style={{ marginTop: 8 }}>
+          Pre-fills the server field when creating new instances.
+        </p>
+      </section>
+
+      {/* 5. About */}
       <section className="settings__section">
         <h2 className="settings__section-title">About</h2>
 
