@@ -56,7 +56,12 @@ export function InstanceList() {
       ) : (
         <div className="instances__grid">
           {instances.map((inst) => (
-            <div key={inst.id} className="instance-card">
+            <div
+              key={inst.id}
+              className="instance-card"
+              onClick={() => !launching && setEditingInstance(inst)}
+              style={{ cursor: launching ? 'default' : 'pointer' }}
+            >
               <div className="instance-card__icon">🌍</div>
               <div className="instance-card__info">
                 <h3>{inst.name}</h3>
@@ -76,23 +81,15 @@ export function InstanceList() {
                 )}
               </div>
               <button
-                className="instance-card__edit"
-                onClick={() => setEditingInstance(inst)}
-                disabled={launching !== null}
-                aria-label={`Edit ${inst.name}`}
-              >
-                ✎
-              </button>
-              <button
                 className="instance-card__play"
-                onClick={() => handleLaunch(inst.id)}
+                onClick={(e) => { e.stopPropagation(); handleLaunch(inst.id); }}
                 disabled={launching !== null}
               >
                 {launching === inst.id ? '⏳' : '▶'}
               </button>
               <button
                 className="instance-card__delete"
-                onClick={() => handleDelete(inst.id, inst.name)}
+                onClick={(e) => { e.stopPropagation(); handleDelete(inst.id, inst.name); }}
                 disabled={launching !== null}
                 aria-label={`Delete ${inst.name}`}
               >

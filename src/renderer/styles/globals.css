@@ -326,6 +326,37 @@ body {
   margin-top: 4px;
 }
 
+.login-card__toggle {
+  display: flex;
+  background: var(--bg-elevated);
+  border-radius: 999px;
+  padding: 3px;
+  margin-bottom: 24px;
+  gap: 2px;
+}
+
+.login-card__toggle-btn {
+  flex: 1;
+  padding: 7px 12px;
+  border: none;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-muted);
+  transition: background 0.15s, color 0.15s;
+}
+
+.login-card__toggle-btn--active {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.login-card__toggle-btn:not(.login-card__toggle-btn--active):hover {
+  color: var(--text-secondary);
+}
+
 .login-card__btn {
   background: var(--accent);
   color: var(--bg-primary);

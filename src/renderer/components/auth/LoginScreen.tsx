@@ -100,15 +100,15 @@ export function LoginScreen() {
           <p className="login-card__subtitle">Minecraft Launcher</p>
         </div>
 
-        <div className="login-card__tabs">
+        <div className="login-card__toggle">
           <button
-            className={`login-card__tab ${tab === 'microsoft' ? 'login-card__tab--active' : ''}`}
+            className={`login-card__toggle-btn ${tab === 'microsoft' ? 'login-card__toggle-btn--active' : ''}`}
             onClick={() => switchTab('microsoft')}
           >
             Microsoft Account
           </button>
           <button
-            className={`login-card__tab ${tab === 'offline' ? 'login-card__tab--active' : ''}`}
+            className={`login-card__toggle-btn ${tab === 'offline' ? 'login-card__toggle-btn--active' : ''}`}
             onClick={() => switchTab('offline')}
           >
             Offline Mode
