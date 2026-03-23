@@ -50,5 +50,6 @@ jobs:
             release/**/*.dmg
             release/**/*.AppImage
             release/**/*.deb
+            !release/**/*.blockmap
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
