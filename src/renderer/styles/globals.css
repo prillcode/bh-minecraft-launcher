@@ -429,6 +429,33 @@ body {
   gap: 16px;
 }
 
+.login-card__offline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.login-card__input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: var(--font-sans);
+  margin-bottom: 4px;
+}
+
+.login-card__input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.login-card__input::placeholder {
+  color: var(--text-muted);
+}
+
 /* ── Instance Cards ────────────────────────────────────────────── */
 .instances__header {
   display: flex;

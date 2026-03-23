@@ -10,17 +10,17 @@ files:
   - dist/**/*
   - resources/**/*
 
+icon: resources/icon.png
+
 win:
   target:
     - target: nsis
       arch: [x64]
-  icon: resources/icon.ico
 
 mac:
   target:
     - target: dmg
       arch: [x64, arm64]
-  icon: resources/icon.icns
   category: public.app-category.games
 
 linux:
@@ -29,7 +29,6 @@ linux:
       arch: [x64]
     - target: deb
       arch: [x64]
-  icon: resources/icon.png
   category: Game
 
 nsis:
