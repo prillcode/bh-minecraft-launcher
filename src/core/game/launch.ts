@@ -116,9 +116,9 @@ export class GameLauncher {
     }
 
     // Auto-connect to server if configured (great for BlockHaven!)
+    // --server/--port were removed in 1.20; use --quickPlayMultiplayer instead
     if (instance.serverAutoConnect) {
-      args.push('--server', instance.serverAutoConnect.host);
-      args.push('--port', String(instance.serverAutoConnect.port));
+      args.push('--quickPlayMultiplayer', `${instance.serverAutoConnect.host}:${instance.serverAutoConnect.port}`);
     }
 
     return args;
