@@ -1,6 +1,6 @@
 {
   "name": "blockhaven-launcher",
-  "version": "0.5.8",
+  "version": "0.5.10",
   "description": "Custom Minecraft launcher with Microsoft auth, multi-instance support, and mod management",
   "main": "dist/main/index.js",
   "author": {
@@ -16,7 +16,7 @@
     "dev:renderer": "vite dev src/renderer",
     "build": "pnpm build:main && pnpm build:renderer",
     "build:main": "vite build --config vite.main.config.ts",
-    "build:renderer": "vite build src/renderer",
+    "build:renderer": "vite build",
     "start": "electron dist/main/index.js",
     "package": "electron-builder --config electron-builder.yml --publish never",
     "test": "vitest run",
