@@ -49,17 +49,30 @@
 
 ---
 
+### Phase 04: Mod Dependency Auto-Install
+**Status:** 📋 Planned (depends on Phase 01 + 02 + 03)
+
+**Goals:**
+- When user clicks Install in VersionPickerModal, fetch the selected version's required deps
+- Filter out already-installed deps; if any remain, show inline confirmation prompt listing them
+- Install uninstalled deps sequentially first, then the requested mod
+- Per-item status label during install ("Installing Fabric API…")
+- Simple mods (no deps) install unchanged in a single click
+
+**Plans:**
+- [04-01](phases/04-dep-auto-install/04-01-PLAN.md) — IPC backend: `mods:get-required-deps` handler + `DependencyInfo` type
+- [04-02](phases/04-dep-auto-install/04-02-PLAN.md) — VersionPickerModal: two-phase install flow + dep confirmation UI
+
+---
+
 ## Execution Order
 
 ```
-01-01 -> 01-02 -> 02-01 -> 02-02
+01-01 -> 01-02 -> 02-01 -> 02-02 -> 04-01 -> 04-02
                        -> 03-01
 ```
 
-02-02 and 03-01 both depend on 02-01 and can run in either order.
-
 ## Next Steps
 
-1. Execute Phase 01: `/run-plan .planning/pcw-104-build-out-mods-tab/phases/01-mod-manager-ipc/01-01-PLAN.md`
-2. Then `01-02-PLAN.md`, then `02-01-PLAN.md`
-3. Then `02-02-PLAN.md` and `03-01-PLAN.md` in either order
+1. Execute Phase 04: `/run-plan .planning/pcw-104-build-out-mods-tab/phases/04-dep-auto-install/04-01-PLAN.md`
+2. Then `04-02-PLAN.md`

@@ -53,6 +53,8 @@ contextBridge.exposeInMainWorld('launcher', {
     list: (instanceId: string) => ipcRenderer.invoke('mods:list', instanceId),
     getVersions: (projectId: string, gameVersion: string, loader?: string) =>
       ipcRenderer.invoke('mods:get-versions', projectId, gameVersion, loader),
+    getRequiredDeps: (instanceId: string, versionId: string) =>
+      ipcRenderer.invoke('mods:get-required-deps', instanceId, versionId),
   },
 
   // ── Java ──────────────────────────────────────────────────────

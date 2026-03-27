@@ -337,6 +337,63 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
     return installedMod;
   });
 
+  ipcMain.handle('mods:get-required-deps', async (_e, instanceId: string, versionId: string) => {
+    const instance = await instanceManager.get(instanceId);
+    const version = await modrinthAPI.getVersion(versionId);
+
+    const requiredDeps = version.dependencies.filter((d) => d.dependency_type === 'required');
+    if (requiredDeps.length === 0) return [];
+
+    const installedMods = await modManager.list(instanceId);
+    const installedIds = new Set(installedMods.map((m) => m.id));
+
+    const loaderArr =
+      instance.modLoader && instance.modLoader !== 'vanilla' ? [instance.modLoader] : undefined;
+
+    const results: Array<{
+      project_id: string;
+      slug: string;
+      title: string;
+      versionId: string;
+      versionNumber: string;
+    }> = [];
+
+    for (const dep of requiredDeps) {
+      if (installedIds.has(dep.project_id)) continue;
+
+      // Resolve the version to install
+      let resolvedVersionId: string;
+      if (dep.version_id) {
+        resolvedVersionId = dep.version_id;
+      } else {
+        const compatibleVersions = await modrinthAPI.getVersions(dep.project_id, {
+          gameVersions: [instance.versionId],
+          loaders: loaderArr,
+        });
+        if (compatibleVersions.length === 0) {
+          logger.warn(`No compatible version found for dep ${dep.project_id} — skipping`);
+          continue;
+        }
+        resolvedVersionId = compatibleVersions[0].id;
+      }
+
+      const [project, resolvedVersion] = await Promise.all([
+        modrinthAPI.getProject(dep.project_id),
+        modrinthAPI.getVersion(resolvedVersionId),
+      ]);
+
+      results.push({
+        project_id: dep.project_id,
+        slug: project.slug,
+        title: project.title,
+        versionId: resolvedVersionId,
+        versionNumber: resolvedVersion.version_number,
+      });
+    }
+
+    return results;
+  });
+
   ipcMain.handle('mods:remove', async (_e, instanceId: string, projectId: string) => {
     const mod = await modManager.get(instanceId, projectId);
     if (mod) {

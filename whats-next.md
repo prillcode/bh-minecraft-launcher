@@ -1,251 +1,280 @@
-# What's Next — BlockHaven Launcher
-
-Generated: 2026-03-21 (end of session)
-
----
-
 <original_task>
-Add environment variable support to the project: create `.env.example`, add `dotenv`, wire `import 'dotenv/config'` as the first import in `src/main/index.ts`, and create `.gitignore`.
+Diagnose and fix Microsoft auth "invalid_grant" failure in the packaged AppImage (MS_CLIENT_ID not
+reaching the bundled app at runtime), then continue feature development on the BlockHaven Minecraft
+Launcher — a custom Electron + React + TypeScript launcher targeting the BlockHaven SMP server.
 </original_task>
 
 <work_completed>
 
-## Environment variable support (original task — complete)
+## Auth / Packaging Fix (v0.6.2 — confirmed working)
+- Root cause identified: .env not bundled in AppImage; dotenv reads from process.cwd() at runtime
+  which has no .env, causing fallback to placeholder client ID → invalid_grant on every login
+- Fix: vite.main.config.ts now loads .env at build time via dotenv and uses Vite `define` to inline
+  MS_CLIENT_ID, BLOCKHAVEN_SERVER_HOST, BLOCKHAVEN_SERVER_PORT as string literals in the bundle
+- Also inlined previously: MSAL cache serialization (v0.6.0), MSAL instance reset on each login
+  attempt (v0.6.1), --quickPlayMultiplayer for server auto-join (v0.5.12)
+- Full auth chain confirmed working end-to-end in both dev and packaged AppImage:
+  MS device-code → XBL → XSTS → Minecraft login → profile fetch
 
-- **`.env.example`** created at project root with six documented variables:
-  - `MS_CLIENT_ID` (required, Azure AD OAuth)
-  - `LOG_LEVEL` (optional, default "info")
-  - `BLOCKHAVEN_SERVER_HOST` / `BLOCKHAVEN_SERVER_PORT` (optional, default port 25565)
-  - `JAVA_HOME` override (commented out)
-  - `OPEN_DEVTOOLS` (commented out)
-- **`.gitignore`** created: excludes `.env`, `node_modules/`, `dist/`, `release/`, `*.log`
-- **`dotenv` 17.3.1** added via `pnpm add dotenv`
-- **`src/main/index.ts` line 1**: `import 'dotenv/config'` added as the very first import
+## First-Launch Auto-Instance (this session)
+- Added `instances:create-blockhaven` IPC handler in src/main/ipc-handlers.ts
+  Reads inlined BLOCKHAVEN_SERVER_HOST/PORT env vars, fetches latest MC release from version
+  manifest, calls instanceManager.createBlockHavenInstance()
+- Added `createBlockhaven()` to src/main/preload.ts and src/renderer/global.d.ts
+- Modified InstanceList.tsx useEffect: if instances list is empty on mount, auto-calls
+  createBlockhaven() and populates the list; falls through to empty state on failure
 
-## TypeScript fixes (side tasks — complete)
+## Login UX Polish (this session)
+- LoginScreen.tsx: Copy Code button now calls window.open(verificationUri) automatically —
+  browser opens alongside clipboard copy, no manual link click required
+- Removed the clickable verification URL link from both device-code and polling phases
+- Updated device-code phase instructional text: "Copy the code below — your browser will open automatically."
 
-### `src/core/auth/microsoft.ts`
-- Field `pendingRequest` type widened from `Promise<AuthenticationResult> | null` to `Promise<AuthenticationResult | null> | null` — matches MSAL's actual return type from `acquireTokenByDeviceCode()`
-- Lines 61–62 refactored to use a local `const pending` so `.catch(reject)` isn't called on a possibly-null reference
+## Title Bar (this session)
+- TitleBar.tsx: updated from "BlockHaven" to "BlockHaven Minecraft Launcher"
 
-### `tsconfig.main.json`
-- `"module"` changed from `"commonjs"` to `"nodenext"`
-- `"moduleResolution"` added as `"nodenext"` (was missing, defaulted to old `"node"`)
-- `"outDir"` changed from `"dist/main"` to `"dist"`
+## Fabric Mod Loader Support (this session — primary feature, v0.7.0)
 
-**Why these tsconfig changes:** `got` v14 and `electron-store` v10 are ESM-only packages that use the `exports` field in `package.json` for type resolution. The old `"node"` moduleResolution ignores `exports`, making all their types unresolvable. `"nodenext"` was chosen over `"node16"` (they are equivalent when `module` is also set to match, but `nodenext` tracks Node 22+ and was the user's preference) and over `"bundler"` (which requires `module: es2015+`, incompatible with commonjs). Since `package.json` has no `"type": "module"`, TypeScript treats all `.ts` files as CJS under `nodenext` — no `.js` extensions required on relative imports.
+### New file: src/core/game/fabric-provisioner.ts
+- Fetches latest stable Fabric loader version from Fabric meta API:
+  GET https://meta.fabricmc.net/v2/versions/loader/{gameVersion}
+- Fetches full Fabric profile JSON:
+  GET https://meta.fabricmc.net/v2/versions/loader/{gameVersion}/{loaderVersion}/profile/json
+- Downloads all Fabric library JARs into shared libraries directory using mavenCoordToPath()
+  (converts "net.fabricmc:fabric-loader:0.16.x" → "net/fabricmc/fabric-loader/0.16.x/...")
+- SHA1-verified; idempotent (skips already-downloaded files); fires onProgress 'fabric' phase events
+- Returns { mainClass, libraryPaths } to caller
 
-**Why `outDir` changed:** With `rootDir: "src"` and `outDir: "dist/main"`, TypeScript mirrors the full source tree, so `src/main/index.ts` was being emitted to `dist/main/main/index.js`. `package.json` `"main"` field expects `dist/main/index.js`. Changing `outDir` to `"dist"` gives the correct output path.
+### Modified: src/core/game/launch.ts
+- Imported FabricProvisioner, added private fabricProvisioner instance
+- In launch(): if instance.modLoader === 'fabric', calls fabricProvisioner.provision() with
+  onProgress, captures { mainClass, libraryPaths }
+- buildClasspath() gained optional extraLibs parameter — Fabric JARs prepended before vanilla libs
+- Launch command uses fabric mainClass instead of version.mainClass when Fabric is active
 
-### `src/core/auth/token-store.ts`
-- Constructor call changed to `new Store<{ session: StoredSession | null }>({...})` — the `schema` option caused TypeScript to infer `{ session: unknown }` from the JSON Schema definition, conflicting with the field's declared generic. Explicit type parameter overrides schema inference.
+### Modified: src/core/game/types.ts
+- DownloadProgress.phase: added 'fabric' literal
+- LaunchOptions: added optional onProgress?: (progress: DownloadProgress) => void
 
-### `src/core/game/asset-manager.ts` (line 130) and `src/core/game/launch.ts` (line 163)
-- Both files had: `{ win32: 'windows', darwin: 'osx', linux: 'linux' }[process.platform]`
-- `process.platform` is typed as `NodeJS.Platform` which includes 11 values (`aix`, `android`, `cygwin`, `freebsd`, `haiku`, `netbsd`, `openbsd`, `sunos`, `win32`, `darwin`, `linux`), but the object literal only had 3 keys — TypeScript rejected the index access
-- Fixed by casting the map: `({ ... } as Record<string, string>)[process.platform]`
+### Modified: src/main/ipc-handlers.ts
+- game:launch handler: passes onProgress into gameLauncher.launch() so Fabric download
+  progress appears in the status bar as 'fabric' phase
 
-### `src/core/utils/download.ts` (line 40)
-- `progress` implicit `any` error resolved automatically once `got`'s types became resolvable via the `moduleResolution` fix — no code change needed
+### Modified: src/renderer/components/instances/CreateInstanceModal.tsx
+- Added modLoader state ('vanilla' | 'fabric'), defaults to 'vanilla'
+- Added "Mod Loader" select dropdown (None/Vanilla, Fabric) above the server field
+- modLoader included in InstanceConfig passed to instances:create
 
-## UI improvements (side tasks — complete)
+### Modified: src/renderer/components/instances/EditInstanceModal.tsx
+- Same dropdown, initialized from instance.modLoader (falls back to 'vanilla' for legacy instances)
+- modLoader included in Partial<InstanceConfig> passed to instances:update
 
-### Clickable Microsoft login link during polling phase
-- **`src/renderer/components/auth/LoginScreen.tsx`**: The `polling` phase previously showed only the spinner and code, with no link. Added the `verificationUri` as a clickable `<a>` with `target="_blank"` and `login-card__url` class, matching the existing `device-code` phase treatment.
+### Modified: src/renderer/components/mods/ModsTab.tsx
+- Derived selectedInstance and isVanilla = !modLoader || modLoader === 'vanilla'
+- Search input, Search button disabled when isVanilla
+- When vanilla selected: shows "Mods require a mod loader. Edit the instance and switch to Fabric."
+- InstalledModsPanel hidden for vanilla instances
+- Results list gated behind !isVanilla
 
-### Copy-to-clipboard button for device code
-- **`src/renderer/components/auth/LoginScreen.tsx`**: Added `copied` state and `copyCode` callback using `navigator.clipboard.writeText()`. Copy button appears inline next to the code in both `device-code` and `polling` phases. Shows "Copied!" for 2 seconds then resets.
-- **`src/renderer/styles/globals.css`**: Added `.login-card__copy-btn` styles using existing CSS variables (`--bg-tertiary`, `--border`, `--accent`, `--text-secondary`, `--radius-sm`, `--font-mono`). Hover state turns accent color.
+### Modified: src/renderer/global.d.ts
+- InstanceConfig: added modLoader?: 'vanilla' | 'fabric'
 
-## App launch debugging (side task — complete)
+## Version Bump & Release
+- package.json: 0.6.2 → 0.7.0
+- Committed SHA: 235fad1 — "feat: Fabric mod loader support, first-launch auto-instance, UX polish (v0.7.0)"
+- Tagged v0.7.0, pushed to origin/main with tags — CI building now
 
-- Confirmed `pnpm dev` (tsc watch + vite dev) must reach "Found 0 errors" before running `pnpm start`
-- `pnpm start` runs `electron dist/main/index.js`
-- The app launched successfully and rendered the login screen
+## Testing Confirmed (local dev)
+- Vanilla instance launches correctly (unchanged behavior)
+- Fabric instance creation: dropdown saves modLoader correctly
+- Fabric first launch: status bar shows 'fabric' download progress, game launches with Fabric
+- Fabric second launch: skips downloads, faster start
+- Vanilla instance on Mods tab shows correct "requires mod loader" message
+- Auto-connect to localhost Docker server working with --quickPlayMultiplayer
+- Microsoft auth working end-to-end in AppImage (v0.6.2+)
 
 </work_completed>
 
 <work_remaining>
 
-## PRIORITY: Fix the 403 on `login_with_xbox` — auth chain is broken
+## High Priority
 
-The full OAuth → XBL → XSTS → Minecraft auth chain fails at the final step with:
+### Quilt Mod Loader Support
+- Very low effort: ~80% code reuse from FabricProvisioner
+- Create src/core/game/quilt-provisioner.ts
+  API: GET https://meta.quiltmc.org/v3/versions/loader/{gameVersion}
+  Profile: GET https://meta.quiltmc.org/v3/versions/loader/{gameVersion}/{loaderVersion}/profile/json
+- 'quilt' already exists in Instance.modLoader union in types.ts
+- Add 'quilt' option to CreateInstanceModal and EditInstanceModal dropdowns
+- Add 'quilt' branch in launch.ts (same pattern as fabric)
+- Add 'quilt' to DownloadProgress.phase in types.ts
+- Note: isVanilla in ModsTab already handles quilt correctly (any non-vanilla modLoader enables mods)
 
-```
-HTTPError: Request failed with status code 403 (Forbidden):
-POST https://api.minecraftservices.com/authentication/login_with_xbox
-```
+### Wire Remaining Env Vars
+- JAVA_HOME: src/core/game/java-detector.ts — check process.env.JAVA_HOME first before scanning
+  system paths; useful for pinning a specific JDK
+- OPEN_DEVTOOLS: src/main/index.ts — if process.env.OPEN_DEVTOOLS === 'true', call
+  win.webContents.openDevTools() after window creation
 
-This error surfaces in the UI as: `Error invoking remote method 'auth:poll-login'`
+## Medium Priority
 
-### Debugging steps (in order of likelihood)
+### Mod Dependency Auto-Install
+- Modrinth API exposes dependencies on each mod version: GET /v2/version/{id} returns
+  dependencies[] with { project_id, version_id, dependency_type: 'required'|'optional'|'incompatible' }
+- When user clicks Install on a mod, fetch its version info, collect all required dependencies
+  that aren't already installed, and prompt: "This mod requires: Fabric API, Common Network — install all?"
+- Install dependencies first, then the requested mod
+- Relevant files: src/main/ipc-handlers.ts (mods:install handler), src/renderer/components/mods/VersionPickerModal.tsx
+- ModrinthAPI class (src/core/mods/modrinth-api.ts) likely needs a getVersion() method if not present
 
-**1. Add missing `Accept` header in `src/core/auth/minecraft.ts` line 19–29**
+### Shader Pack Support (Iris / Fabric instances only)
+- Iris stores shader packs in {gameDirectory}/shaderpacks/ — folder already created at instance creation
+- Add a "Shaders" section to the instance detail / EditInstanceModal showing installed shader packs
+- Allow user to browse local .zip files or download from Modrinth (project_type: 'shader')
+- Modrinth search already supports project_type filter — same search flow as mods but filtered to shaders
+- On launch, Iris picks up whatever .zip files are in shaderpacks/ automatically — no launch args needed
+- Gate behind modLoader === 'fabric' (or quilt) since vanilla can't run Iris
+- Note: shader packs are large (10-50MB+) — may want separate progress tracking
 
-The `login_with_xbox` POST request is missing `Accept: 'application/json'`. Both the XBL and XSTS requests in `xbox.ts` include it — `minecraft.ts` does not. Try adding it:
+### Version Mismatch Warning
+- Add serverMinecraftVersion?: string to Instance type in types.ts and InstanceInfo in global.d.ts
+- On game:launch, if serverAutoConnect is set and serverMinecraftVersion differs from instance.versionId,
+  send a warning event to renderer or return a structured warning before spawning process
+- Currently Minecraft itself shows a disconnect screen — acceptable but not ideal UX
 
-```ts
-headers: {
-  'Content-Type': 'application/json',
-  Accept: 'application/json',   // <-- add this
-},
-```
+### Mod Loader Version Pinning
+- Currently always fetches latest stable Fabric loader on each launch (fast API call + file check)
+- To pin: after provision(), call instanceManager.update(id, { modLoaderVersion: loaderVersion })
+- FabricProvisioner.provision() should accept optional pinned version, skip meta API call if provided
+- Prevents unexpected loader upgrades between sessions
 
-**2. Verify Azure AD app registration**
+### Forge Support
+- Requires running forge-installer.jar as subprocess: java -jar forge-installer.jar --installClient
+- Much more complex than Fabric — installer mutates game directory, generates new version JSON
+- Not recommended until Fabric/Quilt are solid and tested
 
-The `MS_CLIENT_ID` in `.env` must be configured correctly in Azure Portal:
-- Platform: "Mobile and desktop applications"
-- Redirect URI: `https://login.microsoftonline.com/common/oauth2/nativeclient`
-- API Permissions: `XboxLive.signin` (delegated) must be granted
-- The authority in `microsoft.ts` is `https://login.microsoftonline.com/consumers` — this targets personal Microsoft accounts only. If the test account is a work/school account, change to `common` or `organizations`.
-
-**3. Verify the test account owns Minecraft Java Edition**
-
-A 403 from `login_with_xbox` (not `minecraft/profile`) can also mean the Xbox token exchange itself is being rejected. If the account doesn't have Xbox Live linked, that step fails before even reaching the Minecraft ownership check. Confirm the Microsoft account has Xbox Live set up.
-
-**4. Check `RpsTicket` prefix in `src/core/auth/xbox.ts` line 26**
-
-```ts
-RpsTicket: `d=${msAccessToken}`,
-```
-
-The `d=` prefix is correct for Microsoft OAuth tokens acquired via MSAL. If this ever changes (e.g. different MSAL version or scope), it may need to be `t=` instead. Verify MSAL is returning a proper access token (log `msAccessToken.substring(0, 20)` to confirm it's not undefined/empty).
-
-**5. Log intermediate tokens for diagnosis**
-
-Add temporary debug logging in `src/core/auth/xbox.ts` after each step to confirm XBL and XSTS tokens are being received and have non-empty `token` and `userHash` fields before being passed to `loginWithXbox`.
-
-## Follow-on work (not yet started)
-
-- Wire `BLOCKHAVEN_SERVER_HOST` / `BLOCKHAVEN_SERVER_PORT` env vars into `InstanceManager.createBlockHavenInstance()` in `src/core/game/instance.ts` (currently uses hardcoded values at call sites)
-- Wire `OPEN_DEVTOOLS` env var into `src/main/index.ts` to conditionally open DevTools instead of always opening in dev mode
-- Wire `JAVA_HOME` env var override into `src/core/game/java-detector.ts`
-- Implement actual instance management UI (the `InstanceList` component exists but may not be wired to real data)
-- End-to-end game launch testing (auth chain must be fixed first)
+## Low Priority / Nice-to-Have
+- Pre-fill server host field in Create Instance modal with BLOCKHAVEN_SERVER_HOST env var
+- Mod enable/disable: rename .jar → .jar.disabled on disk when toggled (enabled flag exists on
+  InstalledModInfo but has no effect currently)
+- Settings page: expose defaultMaxMemory/defaultMinMemory for global JVM heap tuning
+- closeOnLaunch: defined in LauncherSettings but behavior not wired in main/index.ts
 
 </work_remaining>
 
 <attempted_approaches>
 
-## `moduleResolution` iterations
+## Auth Debugging (resolved)
+- Deleted ~/.config/blockhaven-launcher/auth.json to clear stale session — did not fix (root
+  cause was missing client ID, not stale cache)
+- Various MSAL configuration attempts before identifying build-time env var inlining as the fix
 
-1. First tried `"moduleResolution": "node16"` alone (without changing `module`) — TypeScript 5.7 rejected this with: `Option 'module' must be set to 'Node16' when option 'moduleResolution' is set to 'Node16'`
-2. Tried `"moduleResolution": "bundler"` mentally — ruled out because it requires `module: es2015+`, incompatible with `module: commonjs`
-3. Final solution: set both `module` and `moduleResolution` to `"nodenext"` — user preferred this to keep Node 22 alignment
-
-## `outDir` discovery
-
-- The wrong output path (`dist/main/main/index.js`) was only discovered after running `pnpm dev` and trying `pnpm start`, which gave `Cannot find module '.../dist/main/index.js'`
-- Inspected `dist/main/` with `ls` and found the nested `main/` directory, traced it to the `rootDir`/`outDir` interaction
+## What Was NOT Attempted (and why)
+- Bundling .env into the AppImage: rejected — would expose secrets in the package
+- Runtime env var injection via electron-builder extraFiles: rejected — fragile, requires .env
+  at install location
+- Forge support: deferred — installer JAR subprocess approach is high complexity, low priority
 
 </attempted_approaches>
 
 <critical_context>
 
-## Project structure
+## Project
+- Repo: https://github.com/prillcode/bh-minecraft-launcher
+- Local: /home/prill/dev/bh-minecraft-launcher
+- Stack: Electron + React + TypeScript, pnpm@9.15.0, Node 22, Electron 34
+- electron-store v10, got v14 — both ESM-only, require nodenext moduleResolution
+- Main process bundled as CJS by vite.main.config.ts (format: 'cjs' in rollupOptions)
+- package.json has NO "type": "module" — TS treats files as CJS under nodenext
 
-```
-bh-minecraft-launcher/
-  src/
-    main/         — Electron main process (compiled by tsconfig.main.json)
-      index.ts    — Entry point; dotenv loaded here as first import
-      ipc-handlers.ts
-      preload.ts
-    core/         — Also compiled by tsconfig.main.json (included in "include")
-      auth/
-        microsoft.ts   — MSAL device-code flow (Step 1)
-        xbox.ts        — XBL + XSTS token exchange (Step 2)
-        minecraft.ts   — Minecraft auth + profile fetch (Step 3) ← FAILING HERE
-        token-store.ts — electron-store persistence
-        types.ts
-      game/
-        asset-manager.ts
-        instance.ts
-        launch.ts
-        version-manifest.ts
-        java-detector.ts
-      mods/
-      utils/
-        download.ts
-        logger.ts
-        paths.ts
-    renderer/     — Vite/React frontend (separate tsconfig.renderer.json)
-      components/auth/LoginScreen.tsx  ← modified this session
-      styles/globals.css               ← modified this session
-      stores/auth-store.ts
-```
+## Build / Run
+  pnpm dev    # tsc watch + vite dev (wait for "Found 0 errors")
+  pnpm start  # electron dist/main/index.js
+  pnpm build  # full build
+  pnpm package # electron-builder
 
-## Build / run commands
+## Auth Data Locations
+- AppImage runtime: ~/.config/blockhaven-launcher/auth.json
+- Dev (pnpm start): ~/.config/Electron/auth.json
 
-```bash
-# Terminal 1 — compile + watch (wait for "Found 0 errors")
-pnpm dev
+## Env Vars (all inlined at Vite build time via vite.main.config.ts define)
+- MS_CLIENT_ID — in .env (gitignored) and GitHub secret MS_CLIENT_ID
+- BLOCKHAVEN_SERVER_HOST — default play.bhsmp.com; use localhost for Docker testing
+- BLOCKHAVEN_SERVER_PORT — default 25565
+- JAVA_HOME — NOT YET WIRED (java-detector.ts)
+- OPEN_DEVTOOLS — NOT YET WIRED (main/index.ts)
 
-# Terminal 2 — launch Electron (only after terminal 1 is ready)
-pnpm start
-```
+## Key Architectural Decisions
+- Fabric JARs stored in shared libraries dir (same as vanilla libs) — not per-instance
+- Fabric provisioning inside GameLauncher.launch() — launcher owns all launch prerequisites
+- isVanilla in ModsTab treats missing modLoader as vanilla (safe for legacy instances)
+- createBlockhaven auto-create on empty list is intentional for dedicated launcher UX
+- Version list is fully dynamic from Mojang's manifest API — no hardcoded versions
 
-## Key configuration state
+## Fabric Implementation Notes
+- profile JSON libraries[].url is a Maven repo BASE URL — must append mavenCoordToPath(lib.name)
+- Library entries may or may not have sha1 field — provisioner handles both cases
+- Always fetches latest stable loader (stable: true flag in API response)
+- modLoaderVersion on Instance is never written after provision (known limitation)
 
-- **`tsconfig.main.json`**: `module: nodenext`, `moduleResolution: nodenext`, `outDir: dist`, `rootDir: src`
-- **`package.json` `"main"`**: `dist/main/index.js` (matches output path now that `outDir` is `dist`)
-- **`package.json` has no `"type": "module"`** — TypeScript treats all `.ts` as CJS under nodenext; no `.js` extensions needed on relative imports
-- **Node version**: 22
-- **Electron version**: 34
-- **`electron-store`**: v10 (ESM-only, requires nodenext resolution)
-- **`got`**: v14 (ESM-only, requires nodenext resolution)
+## CI
+- .github/workflows/release.yml — triggers on v* tags, 3-OS matrix
+- Creates .env with MS_CLIENT_ID from GitHub secret MS_CLIENT_ID
+- Artifacts: BlockHaven-Launcher-{version}-{arch}.{ext}
+- Test AppImage: chmod +x *.AppImage && ./BlockHaven*.AppImage
 
-## Auth chain (4 steps)
+## Gotchas
+- electron-store: always pass explicit generic — schema option causes TS to infer unknown
+- process.platform map needs `as Record<string, string>` cast
+- outDir in tsconfig.main.json must be 'dist' not 'dist/main'
+- Minecraft version "26.1" is real (March 2026 release) — appears from live Mojang API
+- Version mismatch between client and server = clean Minecraft disconnect screen, not crash
 
-1. `MicrosoftAuth.startDeviceCodeFlow()` → device code shown to user
-2. `MicrosoftAuth.acquireTokenByDeviceCode()` → MS access token (via MSAL polling)
-3. `XboxAuth.authenticateWithXBL(msAccessToken)` → XBL token
-4. `XboxAuth.authenticateWithXSTS(xblToken)` → XSTS token
-5. `MinecraftAuth.loginWithXbox(xstsToken)` → Minecraft access token ← **403 HERE**
-6. `MinecraftAuth.getProfile(mcAccessToken)` → player profile
+## Server
+- BlockHaven SMP: play.bhsmp.com / play.blockhaven.net
+- Local Docker testing: set BLOCKHAVEN_SERVER_HOST=localhost in .env before building
+- Server is vanilla — Fabric client connects without issues
 
-Steps 1–2 confirmed working (device code displayed, user completed browser auth, MSAL returned token). Steps 3–5 are the unverified zone. The 403 is thrown from `got` in `minecraft.ts:19`.
+## Popular Fabric Mods for Testing
+Performance:
+- Sodium (sodium) — rendering engine replacement, major FPS boost
+- Lithium (lithium) — general server/client optimizations
+- Iris Shaders (iris) — shader support (requires Sodium)
 
-## CSS / theming
+QoL:
+- JEI / REI (roughly-enough-items) — item/recipe browser
+- AppleSkin (appleskin) — food value HUD
+- Xaero's Minimap (xaeros-minimap)
+- JourneyMap (journeymap)
 
-The renderer uses CSS custom properties (`--accent`, `--bg-tertiary`, `--border`, `--text-secondary`, `--radius-sm`, `--radius-md`, `--font-mono`) defined in `globals.css`. Always use these variables for any new UI work — no hardcoded colors.
-
-## electron-store generic typing gotcha
-
-When passing a `schema` option to `new Store({...})`, electron-store infers types from the JSON Schema definition (`type: ['object', 'null']` → `unknown`). Always pass the TypeScript generic explicitly: `new Store<YourType>({...})` to override schema inference.
+All available on Modrinth, compatible with recent Fabric versions.
 
 </critical_context>
 
 <current_state>
 
-## Deliverable status
+## Deliverables
+- v0.7.0: COMPLETE — committed 235fad1, tagged, pushed, CI building
+- Fabric support: COMPLETE (provisioner, launch, UI, mod tab gating)
+- First-launch auto-instance: COMPLETE
+- Login UX (copy+open browser): COMPLETE
+- Title bar rename: COMPLETE
+- Vanilla mod tab block with explanation: COMPLETE
 
-| Item | Status |
-|------|--------|
-| `.env.example` | Complete |
-| `.gitignore` | Complete |
-| `dotenv` installed + wired | Complete |
-| All TypeScript errors resolved | Complete (0 errors in watch) |
-| App launches and renders UI | Complete |
-| Microsoft OAuth device-code flow | Complete (displays code, copy button, clickable link) |
-| XBL / XSTS token exchange | Unknown — not verified independently |
-| Minecraft `login_with_xbox` (403) | **BROKEN — next priority** |
-| Game launch end-to-end | Not started |
-| Env vars wired into game/instance code | Not started |
+## In-Progress
+- CI build for v0.7.0 triggered by tag push — building Linux/macOS/Windows artifacts
 
-## Current working state
+## Not Started (priority order)
+1. Quilt support
+2. JAVA_HOME wiring
+3. OPEN_DEVTOOLS wiring
+4. Version mismatch warning
+5. Mod loader version pinning
+6. Forge support
 
-- `pnpm dev` runs cleanly with 0 TypeScript errors
-- The UI renders the login screen correctly
-- The device-code OAuth flow completes (user can authenticate with Microsoft)
-- After successful MS auth, the app crashes at the Minecraft services API with a 403
-- No commits have been made — all changes are unstaged working tree edits
-- No `.env` file exists yet (only `.env.example`) — user must create `.env` and set a real `MS_CLIENT_ID`
-
-## Open questions
-
-- Is the Azure AD app registration correctly configured? (Most likely root cause of 403)
-- Does the test Microsoft account have Minecraft Java Edition purchased?
-- Is the test account a personal Microsoft account? (The MSAL authority is set to `consumers` — work/school accounts won't work)
+## Known Limitations
+- modLoaderVersion on Instance never written — always re-fetches latest Fabric loader
+- Mod enable/disable toggle in UI has no disk effect (.jar.disabled rename not implemented)
+- No pre-launch version mismatch warning (handled gracefully by Minecraft disconnect screen)
 
 </current_state>

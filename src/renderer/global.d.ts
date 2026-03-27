@@ -62,6 +62,7 @@ interface LauncherAPI {
     remove(instanceId: string, projectId: string): Promise<{ success: boolean }>;
     list(instanceId: string): Promise<InstalledModInfo[]>;
     getVersions(projectId: string, gameVersion: string, loader?: string): Promise<ModVersionInfo[]>;
+    getRequiredDeps(instanceId: string, versionId: string): Promise<DependencyInfo[]>;
   };
   java: {
     provision(component: string): Promise<{ javaExe: string }>;
@@ -135,6 +136,14 @@ declare global {
     filename: string;
     size: number;
     primary: boolean;
+  }
+
+  interface DependencyInfo {
+    project_id: string;
+    slug: string;
+    title: string;
+    versionId: string;
+    versionNumber: string;
   }
 
   interface ModVersionInfo {

@@ -18,6 +18,7 @@ export default defineConfig({
     'process.env.MS_CLIENT_ID': JSON.stringify(process.env.MS_CLIENT_ID ?? ''),
     'process.env.BLOCKHAVEN_SERVER_HOST': JSON.stringify(process.env.BLOCKHAVEN_SERVER_HOST ?? 'play.bhsmp.com'),
     'process.env.BLOCKHAVEN_SERVER_PORT': JSON.stringify(process.env.BLOCKHAVEN_SERVER_PORT ?? '25565'),
+    'process.env.OPEN_DEVTOOLS': JSON.stringify(process.env.OPEN_DEVTOOLS ?? ''),
   },
   build: {
     outDir: 'dist/main',

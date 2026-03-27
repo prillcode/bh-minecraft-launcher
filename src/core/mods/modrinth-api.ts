@@ -32,6 +32,7 @@ export interface ModrinthVersion {
   }>;
   dependencies: Array<{
     project_id: string;
+    version_id?: string;
     dependency_type: 'required' | 'optional' | 'incompatible';
   }>;
 }
