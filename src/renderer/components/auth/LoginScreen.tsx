@@ -23,11 +23,12 @@ export function LoginScreen() {
   const [offlineError, setOfflineError] = useState<string | null>(null);
   const { setProfile, offlineLogin } = useAuthStore();
 
-  const copyCode = useCallback((code: string) => {
+  const copyCode = useCallback((code: string, verificationUri: string) => {
     navigator.clipboard.writeText(code).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
+    window.open(verificationUri, '_blank', 'noopener,noreferrer');
   }, []);
 
   const handleLogin = async () => {
@@ -125,19 +126,11 @@ export function LoginScreen() {
 
             {phase === 'device-code' && deviceCode && (
               <div className="login-card__device-code">
-                <p>Open your browser and go to:</p>
-                <a
-                  href={deviceCode.verificationUri}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="login-card__url"
-                >
-                  {deviceCode.verificationUri}
-                </a>
+                <p>Copy the code below — your browser will open automatically.</p>
                 <p>Then enter this code:</p>
                 <div className="login-card__code">
                   {deviceCode.userCode}
-                  <button className="login-card__copy-btn" onClick={() => copyCode(deviceCode.userCode)}>
+                  <button className="login-card__copy-btn" onClick={() => copyCode(deviceCode.userCode, deviceCode.verificationUri)}>
                     {copied ? 'Copied!' : 'Copy'}
                   </button>
                 </div>
@@ -149,22 +142,12 @@ export function LoginScreen() {
                 <div className="loader" />
                 <p>Waiting for you to sign in...</p>
                 {deviceCode && (
-                  <>
-                    <a
-                      href={deviceCode.verificationUri}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="login-card__url"
-                    >
-                      {deviceCode.verificationUri}
-                    </a>
-                    <div className="login-card__code-reminder">
-                      Code: <strong>{deviceCode.userCode}</strong>
-                      <button className="login-card__copy-btn" onClick={() => copyCode(deviceCode.userCode)}>
-                        {copied ? 'Copied!' : 'Copy'}
-                      </button>
-                    </div>
-                  </>
+                  <div className="login-card__code-reminder">
+                    Code: <strong>{deviceCode.userCode}</strong>
+                    <button className="login-card__copy-btn" onClick={() => copyCode(deviceCode.userCode, deviceCode.verificationUri)}>
+                      {copied ? 'Copied!' : 'Copy'}
+                    </button>
+                  </div>
                 )}
               </div>
             )}

@@ -48,6 +48,9 @@ export function ModsTab() {
     });
   }, []);
 
+  const selectedInstance = instances.find((i) => i.id === selectedInstanceId) ?? null;
+  const isVanilla = !selectedInstance || !selectedInstance.modLoader || selectedInstance.modLoader === 'vanilla';
+
   const handleSearch = async () => {
     if (!selectedInstanceId) {
       setSearchError('Select an instance first.');
@@ -93,9 +96,9 @@ export function ModsTab() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search Modrinth..."
-            disabled={!selectedInstanceId}
+            disabled={!selectedInstanceId || isVanilla}
           />
-          <button type="submit" className="btn btn--primary" disabled={!selectedInstanceId || searching}>
+          <button type="submit" className="btn btn--primary" disabled={!selectedInstanceId || isVanilla || searching}>
             {searching ? 'Searching...' : 'Search'}
           </button>
         </form>
@@ -109,7 +112,17 @@ export function ModsTab() {
         </div>
       )}
 
-      {results.length > 0 && (
+      {selectedInstanceId && isVanilla && (
+        <div className="mods__empty">
+          <p>Mods require a mod loader.</p>
+          <p className="form-group__hint" style={{ marginTop: '8px' }}>
+            This instance uses vanilla Minecraft, which cannot load mods.<br />
+            Edit the instance and switch the Mod Loader to <strong>Fabric</strong> to enable mod support.
+          </p>
+        </div>
+      )}
+
+      {!isVanilla && results.length > 0 && (
         <div className="mods__results">
           {results.map((hit) => (
             <ModCard
@@ -135,7 +148,7 @@ export function ModsTab() {
         />
       )}
 
-      {selectedInstanceId && (
+      {selectedInstanceId && !isVanilla && (
         <InstalledModsPanel
           instanceId={selectedInstanceId}
           refreshKey={installedRefreshKey}

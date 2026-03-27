@@ -4,6 +4,7 @@ import { getLauncherPaths } from '../utils/paths';
 import { JavaDetector } from './java-detector';
 import { InstanceManager } from './instance';
 import { VersionManifest } from './version-manifest';
+import { FabricProvisioner } from './fabric-provisioner';
 import type { LaunchOptions, VersionDetail, Instance } from './types';
 import { logger } from '../utils/logger';
 
@@ -22,6 +23,7 @@ export class GameLauncher {
   private versionManifest = new VersionManifest();
   private javaDetector = new JavaDetector();
   private instanceManager = new InstanceManager();
+  private fabricProvisioner = new FabricProvisioner();
 
   async launch(options: LaunchOptions): Promise<ChildProcess> {
     const paths = getLauncherPaths();
@@ -31,11 +33,20 @@ export class GameLauncher {
     const version = await this.versionManifest.getVersion(instance.versionId);
 
     const javaPath = instance.javaPath ?? (await this.javaDetector.findBest(version));
-    const classpath = this.buildClasspath(version, paths.libraries, paths.versions);
+
+    let mainClass = version.mainClass;
+    let extraLibs: string[] = [];
+    if (instance.modLoader === 'fabric') {
+      const fabric = await this.fabricProvisioner.provision(instance.versionId, options.onProgress);
+      mainClass = fabric.mainClass;
+      extraLibs = fabric.libraryPaths;
+    }
+
+    const classpath = this.buildClasspath(version, paths.libraries, paths.versions, extraLibs);
     const gameArgs = this.buildGameArgs(version, instance, options);
     const jvmArgs = this.buildJvmArgs(version, instance, paths);
 
-    const allArgs = [...jvmArgs, '-cp', classpath, version.mainClass, ...gameArgs];
+    const allArgs = [...jvmArgs, '-cp', classpath, mainClass, ...gameArgs];
 
     logger.info(`Launching: ${javaPath} [${allArgs.length} args]`);
     logger.debug(`Full command: ${javaPath} ${allArgs.join(' ')}`);
@@ -68,9 +79,10 @@ export class GameLauncher {
     version: VersionDetail,
     librariesDir: string,
     versionsDir: string,
+    extraLibs: string[] = [],
   ): string {
     const separator = process.platform === 'win32' ? ';' : ':';
-    const libs: string[] = [];
+    const libs: string[] = [...extraLibs];
 
     for (const lib of version.libraries) {
       if (!this.shouldIncludeLibrary(lib)) continue;

@@ -8,6 +8,7 @@ interface Props {
 export function CreateInstanceModal({ onClose, onCreate }: Props) {
   const [name, setName] = useState('');
   const [versionId, setVersionId] = useState('');
+  const [modLoader, setModLoader] = useState<'vanilla' | 'fabric'>('vanilla');
   const [serverHost, setServerHost] = useState('');
   const [serverPort, setServerPort] = useState('25565');
   const [versions, setVersions] = useState<Array<{ id: string; releaseTime: string }>>([]);
@@ -50,6 +51,7 @@ export function CreateInstanceModal({ onClose, onCreate }: Props) {
       const config: InstanceConfig = {
         name: name.trim(),
         versionId,
+        modLoader,
         ...(serverHost.trim()
           ? { serverAutoConnect: { host: serverHost.trim(), port: parseInt(serverPort, 10) || 25565 } }
           : {}),
@@ -99,6 +101,18 @@ export function CreateInstanceModal({ onClose, onCreate }: Props) {
                   <option key={v.id} value={v.id}>{v.id}</option>
                 ))
               )}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="ci-mod-loader">Mod Loader</label>
+            <select
+              id="ci-mod-loader"
+              value={modLoader}
+              onChange={(e) => setModLoader(e.target.value as 'vanilla' | 'fabric')}
+            >
+              <option value="vanilla">None (Vanilla)</option>
+              <option value="fabric">Fabric</option>
             </select>
           </div>
 

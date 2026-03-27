@@ -9,7 +9,18 @@ export function InstanceList() {
   const [editingInstance, setEditingInstance] = useState<InstanceInfo | null>(null);
 
   useEffect(() => {
-    window.launcher.instances.list().then(setInstances);
+    window.launcher.instances.list().then(async (list) => {
+      if (list.length === 0) {
+        try {
+          const instance = await window.launcher.instances.createBlockhaven();
+          setInstances([instance]);
+        } catch {
+          setInstances([]);
+        }
+      } else {
+        setInstances(list);
+      }
+    });
   }, []);
 
   const handleLaunch = async (instanceId: string) => {

@@ -98,7 +98,7 @@ export interface Instance {
 
 // ── Download Progress ───────────────────────────────────────────
 export interface DownloadProgress {
-  phase: 'client' | 'libraries' | 'assets' | 'java';
+  phase: 'client' | 'libraries' | 'assets' | 'java' | 'fabric';
   current: number;
   total: number;
   fileName: string;
@@ -119,6 +119,7 @@ export interface LaunchOptions {
   accessToken: string;
   profile: { id: string; name: string };
   userType?: 'msa' | 'legacy';
+  onProgress?: (progress: DownloadProgress) => void;
   onStdout?: (data: string) => void;
   onStderr?: (data: string) => void;
   onExit?: (code: number | null) => void;

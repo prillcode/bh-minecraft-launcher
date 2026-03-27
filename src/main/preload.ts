@@ -39,6 +39,7 @@ contextBridge.exposeInMainWorld('launcher', {
   instances: {
     list: () => ipcRenderer.invoke('instances:list'),
     create: (config: unknown) => ipcRenderer.invoke('instances:create', config),
+    createBlockhaven: () => ipcRenderer.invoke('instances:create-blockhaven'),
     update: (id: string, config: unknown) => ipcRenderer.invoke('instances:update', id, config),
     delete: (id: string) => ipcRenderer.invoke('instances:delete', id),
   },

@@ -9,7 +9,7 @@ export function TitleBar() {
       <div className="title-bar__drag-region">
         <div className="title-bar__brand">
           <span className="title-bar__icon">⛏</span>
-          <span className="title-bar__name">BlockHaven</span>
+          <span className="title-bar__name">BlockHaven Minecraft Launcher</span>
         </div>
 
         {profile && (

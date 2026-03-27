@@ -178,6 +178,7 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
       accessToken: isOffline ? 'offline' : stored.minecraft.accessToken,
       profile: stored.profile,
       userType: isOffline ? 'legacy' : 'msa',
+      onProgress: (progress) => window?.webContents.send('download:progress', progress),
       onStdout: (data) => {
         logger.debug(`[MC] ${data.trimEnd()}`);
         window?.webContents.send('launch:stdout', data);
@@ -226,6 +227,13 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
   ipcMain.handle('instances:delete', async (_event, id: string) => {
     await instanceManager.delete(id);
     return { success: true };
+  });
+
+  ipcMain.handle('instances:create-blockhaven', async () => {
+    const host = process.env.BLOCKHAVEN_SERVER_HOST || 'play.bhsmp.com';
+    const port = parseInt(process.env.BLOCKHAVEN_SERVER_PORT || '25565', 10);
+    const { latest } = await versionManifest.getVersionList();
+    return instanceManager.createBlockHavenInstance(latest.release, host, port);
   });
 
   // ── Settings ────────────────────────────────────────────────

@@ -9,6 +9,9 @@ interface Props {
 export function EditInstanceModal({ instance, onClose, onUpdate }: Props) {
   const [name, setName] = useState(instance.name);
   const [versionId, setVersionId] = useState(instance.versionId);
+  const [modLoader, setModLoader] = useState<'vanilla' | 'fabric'>(
+    instance.modLoader === 'fabric' ? 'fabric' : 'vanilla',
+  );
   const [serverHost, setServerHost] = useState(instance.serverAutoConnect?.host ?? '');
   const [serverPort, setServerPort] = useState(String(instance.serverAutoConnect?.port ?? 25565));
   const [versions, setVersions] = useState<Array<{ id: string; releaseTime: string }>>([]);
@@ -49,6 +52,7 @@ export function EditInstanceModal({ instance, onClose, onUpdate }: Props) {
       const config: Partial<InstanceConfig> = {
         name: name.trim(),
         versionId,
+        modLoader,
         ...(serverHost.trim()
           ? { serverAutoConnect: { host: serverHost.trim(), port: parseInt(serverPort, 10) || 25565 } }
           : { serverAutoConnect: undefined }),
@@ -98,6 +102,18 @@ export function EditInstanceModal({ instance, onClose, onUpdate }: Props) {
                   <option key={v.id} value={v.id}>{v.id}</option>
                 ))
               )}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="ei-mod-loader">Mod Loader</label>
+            <select
+              id="ei-mod-loader"
+              value={modLoader}
+              onChange={(e) => setModLoader(e.target.value as 'vanilla' | 'fabric')}
+            >
+              <option value="vanilla">None (Vanilla)</option>
+              <option value="fabric">Fabric</option>
             </select>
           </div>
 

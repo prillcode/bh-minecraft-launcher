@@ -52,6 +52,7 @@ interface LauncherAPI {
   instances: {
     list(): Promise<InstanceInfo[]>;
     create(config: InstanceConfig): Promise<InstanceInfo>;
+    createBlockhaven(): Promise<InstanceInfo>;
     update(id: string, config: Partial<InstanceConfig>): Promise<InstanceInfo>;
     delete(id: string): Promise<{ success: boolean }>;
   };
@@ -149,6 +150,7 @@ declare global {
   interface InstanceConfig {
     name: string;
     versionId: string;
+    modLoader?: 'vanilla' | 'fabric';
     serverAutoConnect?: { host: string; port: number };
   }
 
