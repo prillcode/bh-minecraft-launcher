@@ -1,6 +1,11 @@
 import { defineConfig } from 'vite';
 import { builtinModules } from 'module';
 import * as path from 'path';
+import { config } from 'dotenv';
+
+// Load .env at build time so MS_CLIENT_ID gets inlined into the bundle.
+// This is the only way the value reaches the packaged app (no .env at runtime).
+config();
 
 const external = [
   'electron',
@@ -9,6 +14,11 @@ const external = [
 ];
 
 export default defineConfig({
+  define: {
+    'process.env.MS_CLIENT_ID': JSON.stringify(process.env.MS_CLIENT_ID ?? ''),
+    'process.env.BLOCKHAVEN_SERVER_HOST': JSON.stringify(process.env.BLOCKHAVEN_SERVER_HOST ?? 'play.bhsmp.com'),
+    'process.env.BLOCKHAVEN_SERVER_PORT': JSON.stringify(process.env.BLOCKHAVEN_SERVER_PORT ?? '25565'),
+  },
   build: {
     outDir: 'dist/main',
     emptyOutDir: true,
