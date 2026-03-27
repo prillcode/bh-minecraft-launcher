@@ -86,7 +86,23 @@ export class MicrosoftAuth {
   }
 
   /**
+   * Serialize MSAL's in-memory token cache (including refresh token) to a string.
+   * Persist this alongside the session so silent refresh survives restarts.
+   */
+  serializeCache(): string {
+    return this.pca.getTokenCache().serialize();
+  }
+
+  /**
+   * Restore a previously serialized MSAL cache before attempting silent refresh.
+   */
+  deserializeCache(cache: string): void {
+    this.pca.getTokenCache().deserialize(cache);
+  }
+
+  /**
    * Silently refresh using MSAL's token cache.
+   * Call deserializeCache() with the stored cache string before calling this.
    */
   async refreshToken(_refreshToken: string): Promise<MicrosoftTokenResponse> {
     const accounts = await this.pca.getTokenCache().getAllAccounts();

@@ -62,6 +62,7 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
       microsoft: msToken,
       minecraft: mcToken,
       profile,
+      msalCache: msAuth.serializeCache(),
     });
 
     return profile;
@@ -91,9 +92,19 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
     const stored = await tokenStore.load();
     if (!stored) throw new Error('No stored session');
 
-    // Offline sessions don't need refresh — just return the stored profile
     if (stored.authMode === 'offline') {
       return stored.profile;
+    }
+
+    // MC token still valid — no need to hit MSAL at all
+    if (await tokenStore.isSessionValid()) {
+      logger.info('MC token still valid, skipping refresh');
+      return stored.profile;
+    }
+
+    // Restore persisted MSAL cache so acquireTokenSilent can find the account
+    if (stored.msalCache) {
+      msAuth.deserializeCache(stored.msalCache);
     }
 
     const msToken = await msAuth.refreshToken(stored.microsoft.refreshToken);
@@ -102,7 +113,13 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
     const mcToken = await mcAuth.loginWithXbox(xstsToken);
     const profile = await mcAuth.getProfile(mcToken.accessToken);
 
-    await tokenStore.save({ authMode: 'microsoft', microsoft: msToken, minecraft: mcToken, profile });
+    await tokenStore.save({
+      authMode: 'microsoft',
+      microsoft: msToken,
+      minecraft: mcToken,
+      profile,
+      msalCache: msAuth.serializeCache(),
+    });
     return profile;
   });
 

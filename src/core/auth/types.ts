@@ -57,4 +57,5 @@ export interface StoredSession {
   microsoft: MicrosoftTokenResponse;
   minecraft: MinecraftTokenResponse;
   profile: MinecraftProfile;
+  msalCache?: string; // Serialized MSAL token cache for silent refresh across restarts
 }
