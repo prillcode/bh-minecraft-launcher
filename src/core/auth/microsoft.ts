@@ -43,6 +43,13 @@ export class MicrosoftAuth {
    * at https://microsoft.com/devicelogin.
    */
   async startDeviceCodeFlow(): Promise<DeviceCodeResponse> {
+    // Reset MSAL instance to clear any corrupted state from a previous failed flow
+    this.pca = new PublicClientApplication({
+      auth: { clientId: CLIENT_ID, authority: AUTHORITY },
+    });
+    this.pendingRequest = null;
+    this.pendingDeviceCode = null;
+
     return new Promise((resolve, reject) => {
       const request: DeviceCodeRequest = {
         scopes: SCOPES,
