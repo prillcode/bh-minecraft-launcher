@@ -18,7 +18,7 @@
     "build:main": "vite build --config vite.main.config.ts",
     "build:renderer": "vite build src/renderer",
     "start": "electron dist/main/index.js",
-    "package": "electron-builder --config electron-builder.yml",
+    "package": "electron-builder --config electron-builder.yml --publish never",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint src --ext .ts,.tsx"
