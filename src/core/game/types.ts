@@ -98,7 +98,7 @@ export interface Instance {
 
 // ── Download Progress ───────────────────────────────────────────
 export interface DownloadProgress {
-  phase: 'client' | 'libraries' | 'assets' | 'java' | 'fabric';
+  phase: 'client' | 'libraries' | 'assets' | 'java' | 'fabric' | 'quilt';
   current: number;
   total: number;
   fileName: string;

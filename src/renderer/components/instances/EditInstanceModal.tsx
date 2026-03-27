@@ -9,8 +9,8 @@ interface Props {
 export function EditInstanceModal({ instance, onClose, onUpdate }: Props) {
   const [name, setName] = useState(instance.name);
   const [versionId, setVersionId] = useState(instance.versionId);
-  const [modLoader, setModLoader] = useState<'vanilla' | 'fabric'>(
-    instance.modLoader === 'fabric' ? 'fabric' : 'vanilla',
+  const [modLoader, setModLoader] = useState<'vanilla' | 'fabric' | 'quilt'>(
+    instance.modLoader === 'fabric' ? 'fabric' : instance.modLoader === 'quilt' ? 'quilt' : 'vanilla',
   );
   const [serverHost, setServerHost] = useState(instance.serverAutoConnect?.host ?? '');
   const [serverPort, setServerPort] = useState(String(instance.serverAutoConnect?.port ?? 25565));
@@ -110,10 +110,11 @@ export function EditInstanceModal({ instance, onClose, onUpdate }: Props) {
             <select
               id="ei-mod-loader"
               value={modLoader}
-              onChange={(e) => setModLoader(e.target.value as 'vanilla' | 'fabric')}
+              onChange={(e) => setModLoader(e.target.value as 'vanilla' | 'fabric' | 'quilt')}
             >
               <option value="vanilla">None (Vanilla)</option>
               <option value="fabric">Fabric</option>
+              <option value="quilt">Quilt</option>
             </select>
           </div>
 

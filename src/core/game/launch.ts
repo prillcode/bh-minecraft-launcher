@@ -5,6 +5,7 @@ import { JavaDetector } from './java-detector';
 import { InstanceManager } from './instance';
 import { VersionManifest } from './version-manifest';
 import { FabricProvisioner } from './fabric-provisioner';
+import { QuiltProvisioner } from './quilt-provisioner';
 import type { LaunchOptions, VersionDetail, Instance } from './types';
 import { logger } from '../utils/logger';
 
@@ -24,6 +25,7 @@ export class GameLauncher {
   private javaDetector = new JavaDetector();
   private instanceManager = new InstanceManager();
   private fabricProvisioner = new FabricProvisioner();
+  private quiltProvisioner = new QuiltProvisioner();
 
   async launch(options: LaunchOptions): Promise<ChildProcess> {
     const paths = getLauncherPaths();
@@ -40,6 +42,10 @@ export class GameLauncher {
       const fabric = await this.fabricProvisioner.provision(instance.versionId, options.onProgress);
       mainClass = fabric.mainClass;
       extraLibs = fabric.libraryPaths;
+    } else if (instance.modLoader === 'quilt') {
+      const quilt = await this.quiltProvisioner.provision(instance.versionId, options.onProgress);
+      mainClass = quilt.mainClass;
+      extraLibs = quilt.libraryPaths;
     }
 
     const classpath = this.buildClasspath(version, paths.libraries, paths.versions, extraLibs);

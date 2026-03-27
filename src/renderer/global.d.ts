@@ -150,7 +150,7 @@ declare global {
   interface InstanceConfig {
     name: string;
     versionId: string;
-    modLoader?: 'vanilla' | 'fabric';
+    modLoader?: 'vanilla' | 'fabric' | 'quilt';
     serverAutoConnect?: { host: string; port: number };
   }
 

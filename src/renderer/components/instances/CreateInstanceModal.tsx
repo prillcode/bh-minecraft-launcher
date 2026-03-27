@@ -8,7 +8,7 @@ interface Props {
 export function CreateInstanceModal({ onClose, onCreate }: Props) {
   const [name, setName] = useState('');
   const [versionId, setVersionId] = useState('');
-  const [modLoader, setModLoader] = useState<'vanilla' | 'fabric'>('vanilla');
+  const [modLoader, setModLoader] = useState<'vanilla' | 'fabric' | 'quilt'>('vanilla');
   const [serverHost, setServerHost] = useState('');
   const [serverPort, setServerPort] = useState('25565');
   const [versions, setVersions] = useState<Array<{ id: string; releaseTime: string }>>([]);
@@ -109,10 +109,11 @@ export function CreateInstanceModal({ onClose, onCreate }: Props) {
             <select
               id="ci-mod-loader"
               value={modLoader}
-              onChange={(e) => setModLoader(e.target.value as 'vanilla' | 'fabric')}
+              onChange={(e) => setModLoader(e.target.value as 'vanilla' | 'fabric' | 'quilt')}
             >
               <option value="vanilla">None (Vanilla)</option>
               <option value="fabric">Fabric</option>
+              <option value="quilt">Quilt</option>
             </select>
           </div>
 
