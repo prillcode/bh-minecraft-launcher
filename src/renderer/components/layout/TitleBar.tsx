@@ -8,16 +8,17 @@ export function TitleBar() {
     <header className="title-bar">
       <div className="title-bar__drag-region">
         <div className="title-bar__brand">
-          <span className="title-bar__icon">⛏</span>
+          <img src="./icon.png" alt="" className="title-bar__icon" />
           <span className="title-bar__name">BlockHaven Minecraft Launcher</span>
         </div>
 
         {profile && (
           <div className="title-bar__user">
             <img
-              src={`https://crafatar.com/avatars/${profile.id}?size=24&overlay`}
+              src={`https://mc-heads.net/avatar/${profile.id}/20`}
               alt={profile.name}
               className="title-bar__avatar"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
             />
             <span className="title-bar__username">{profile.name}</span>
           </div>

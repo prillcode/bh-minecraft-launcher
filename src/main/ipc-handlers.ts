@@ -1,6 +1,7 @@
 import { BrowserWindow, shell, app, dialog, type IpcMain } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import * as net from 'net';
 import { createWriteStream } from 'fs';
 import { pipeline } from 'stream/promises';
 import { MicrosoftAuth } from '../core/auth/microsoft';
@@ -481,5 +482,127 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
     return { fileName, fileSize: stat.size, installedAt: stat.mtimeMs };
   });
 
+  // ── Servers ───────────────────────────────────────────────────
+  ipcMain.handle('servers:ping', async (_e, host: string, port: number) => {
+    return pingMinecraftServer(host, port);
+  });
+
   logger.info('IPC handlers registered');
+}
+
+// ── Minecraft Server List Ping (SLP) ──────────────────────────
+
+interface ServerPingResult {
+  motd: string;
+  favicon: string | null;
+  players: { online: number; max: number } | null;
+  version: string | null;
+}
+
+function encodeVarInt(value: number): Buffer {
+  const bytes: number[] = [];
+  do {
+    let byte = value & 0x7f;
+    value >>>= 7;
+    if (value !== 0) byte |= 0x80;
+    bytes.push(byte);
+  } while (value !== 0);
+  return Buffer.from(bytes);
+}
+
+function decodeVarInt(buf: Buffer, offset: number): [number, number] {
+  let result = 0;
+  let shift = 0;
+  let bytesRead = 0;
+  while (offset + bytesRead < buf.length) {
+    const byte = buf[offset + bytesRead];
+    result |= (byte & 0x7f) << shift;
+    bytesRead++;
+    if ((byte & 0x80) === 0) break;
+    shift += 7;
+    if (shift >= 32) throw new Error('VarInt too large');
+  }
+  return [result, bytesRead];
+}
+
+function extractMotd(description: unknown): string {
+  if (!description) return '';
+  if (typeof description === 'string') return description.replace(/§./g, '');
+  if (typeof description === 'object' && description !== null) {
+    const desc = description as Record<string, unknown>;
+    const base = typeof desc.text === 'string' ? desc.text : '';
+    const extra = Array.isArray(desc.extra)
+      ? desc.extra.map((e: unknown) =>
+          typeof e === 'string' ? e : (e as Record<string, unknown>)?.text ?? ''
+        ).join('')
+      : '';
+    return (base + extra).replace(/§./g, '');
+  }
+  return '';
+}
+
+function pingMinecraftServer(host: string, port: number): Promise<ServerPingResult> {
+  return new Promise((resolve, reject) => {
+    const socket = net.createConnection({ host, port });
+    const TIMEOUT_MS = 5000;
+    let settled = false;
+
+    const done = (result: ServerPingResult) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      socket.destroy();
+      resolve(result);
+    };
+    const fail = (err: Error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      socket.destroy();
+      reject(err);
+    };
+
+    const timer = setTimeout(() => fail(new Error('Connection timed out')), TIMEOUT_MS);
+
+    socket.on('error', fail);
+
+    socket.on('connect', () => {
+      const hostBuf = Buffer.from(host, 'utf8');
+      const handshakePayload = Buffer.concat([
+        encodeVarInt(0x00),
+        encodeVarInt(47),                          // protocol version (compat sentinel)
+        encodeVarInt(hostBuf.length),
+        hostBuf,
+        Buffer.from([(port >> 8) & 0xff, port & 0xff]),
+        encodeVarInt(1),                           // next state: status
+      ]);
+      const handshakePacket = Buffer.concat([encodeVarInt(handshakePayload.length), handshakePayload]);
+      const statusRequest = Buffer.concat([encodeVarInt(1), encodeVarInt(0x00)]);
+      socket.write(Buffer.concat([handshakePacket, statusRequest]));
+    });
+
+    let buf = Buffer.alloc(0);
+    socket.on('data', (chunk: Buffer) => {
+      buf = Buffer.concat([buf, chunk]);
+      try {
+        const [packetLen, lenSize] = decodeVarInt(buf, 0);
+        if (buf.length < lenSize + packetLen) return;
+        const [packetId, idSize] = decodeVarInt(buf, lenSize);
+        if (packetId !== 0x00) { fail(new Error(`Unexpected packet 0x${packetId.toString(16)}`)); return; }
+        const jsonOffset = lenSize + idSize;
+        const [jsonLen, jsonLenSize] = decodeVarInt(buf, jsonOffset);
+        const jsonStart = jsonOffset + jsonLenSize;
+        if (buf.length < jsonStart + jsonLen) return;
+        const raw = JSON.parse(buf.subarray(jsonStart, jsonStart + jsonLen).toString('utf8'));
+        done({
+          motd: extractMotd(raw.description),
+          favicon: raw.favicon ?? null,
+          players: raw.players ? { online: raw.players.online, max: raw.players.max } : null,
+          version: raw.version?.name ?? null,
+        });
+      } catch {
+        // incomplete data — wait for more
+      }
+    });
+  });
 }

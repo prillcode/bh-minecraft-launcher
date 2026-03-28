@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useSelectedInstance } from '../../stores/selected-instance-context';
 import { ShaderVersionPickerModal } from './ShaderVersionPickerModal';
 import { InstalledShadersPanel } from './InstalledShadersPanel';
 
@@ -24,8 +26,9 @@ function ShaderCard({ shader, onInstall }: ShaderCardProps) {
 }
 
 export function ShadersTab() {
+  const { selectedInstanceId } = useSelectedInstance();
+  const navigate = useNavigate();
   const [instances, setInstances] = useState<InstanceInfo[]>([]);
-  const [selectedInstanceId, setSelectedInstanceId] = useState('');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<ModSearchHit[]>([]);
   const [searching, setSearching] = useState(false);
@@ -35,13 +38,13 @@ export function ShadersTab() {
   const [localInstalling, setLocalInstalling] = useState(false);
 
   useEffect(() => {
-    window.launcher.instances.list().then((list) => {
-      setInstances(list);
-      if (list.length > 0) {
-        setSelectedInstanceId(list[0].id);
-      }
-    });
+    window.launcher.instances.list().then(setInstances);
   }, []);
+
+  useEffect(() => {
+    setResults([]);
+    setInstalledRefreshKey((k) => k + 1);
+  }, [selectedInstanceId]);
 
   const selectedInstance = instances.find((i) => i.id === selectedInstanceId) ?? null;
   const isSupported =
@@ -92,22 +95,27 @@ export function ShadersTab() {
         <h2>Shaders</h2>
       </div>
 
-      <div className="mods__controls">
-        <select
-          className="mods__instance-select"
-          value={selectedInstanceId}
-          onChange={(e) => {
-            setSelectedInstanceId(e.target.value);
-            setResults([]);
-            setInstalledRefreshKey((k) => k + 1);
-          }}
-        >
-          <option value="">— Select an instance —</option>
-          {instances.map((i) => (
-            <option key={i.id} value={i.id}>{i.name} ({i.versionId})</option>
-          ))}
-        </select>
+      <div className="mods__instance-header">
+        {selectedInstance ? (
+          <>
+            <span className="mods__instance-label">
+              Instance: <strong>{selectedInstance.name}</strong> ({selectedInstance.versionId})
+            </span>
+            <button className="btn btn--ghost btn--sm" onClick={() => navigate('/instances')}>
+              ← Change
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="mods__instance-label mods__instance-label--none">No instance selected</span>
+            <button className="btn btn--ghost btn--sm" onClick={() => navigate('/instances')}>
+              ← Select Instance
+            </button>
+          </>
+        )}
+      </div>
 
+      <div className="mods__controls">
         <form className="mods__search-form" onSubmit={(e) => { e.preventDefault(); handleSearch(); }}>
           <input
             type="text"

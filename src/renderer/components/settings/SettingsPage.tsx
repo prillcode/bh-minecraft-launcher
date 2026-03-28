@@ -63,7 +63,16 @@ export function SettingsPage() {
         <h2 className="settings__section-title">Account</h2>
 
         <div className="settings__account">
-          <div className="settings__avatar">👤</div>
+          <div className="settings__avatar">
+            {profile?.id ? (
+              <img
+                src={`https://mc-heads.net/avatar/${profile.id}/40`}
+                alt={profile.name}
+                className="settings__avatar-img"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+            ) : '👤'}
+          </div>
           <div className="settings__account-info">
             <div className="settings__account-name">{profile?.name ?? 'Unknown'}</div>
             <span className={`settings__auth-badge settings__auth-badge--${authMode}`}>

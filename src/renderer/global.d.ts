@@ -83,6 +83,9 @@ interface LauncherAPI {
     openDataFolder(): Promise<{ success: boolean }>;
     clearCache(): Promise<{ success: boolean }>;
   };
+  servers: {
+    ping(host: string, port: number): Promise<ServerPingResult>;
+  };
   window: {
     minimize(): Promise<void>;
     maximize(): Promise<void>;
@@ -107,6 +110,13 @@ declare global {
     defaultResolutionHeight: number;
     blockhavenDefaultHost: string;
     blockhavenDefaultPort: number;
+  }
+
+  interface ServerPingResult {
+    motd: string;
+    favicon: string | null;
+    players: { online: number; max: number } | null;
+    version: string | null;
   }
 
   interface ShaderInfo {

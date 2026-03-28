@@ -5,7 +5,7 @@ import { useSelectedInstance } from '../../stores/selected-instance-context';
 
 export function InstanceList() {
   const [instances, setInstances] = useState<InstanceInfo[]>([]);
-  const [launching, setLaunching] = useState<string | null>(null);
+  const [pingResults, setPingResults] = useState<Record<string, ServerPingResult>>({});
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingInstance, setEditingInstance] = useState<InstanceInfo | null>(null);
   const { selectedInstanceId, setSelectedInstanceId } = useSelectedInstance();
@@ -22,27 +22,23 @@ export function InstanceList() {
         }
       }
       setInstances(loaded);
-      // Auto-select first if nothing is currently selected or selection no longer exists
       if (loaded.length > 0) {
         const stillExists = loaded.some((i) => i.id === selectedInstanceId);
         if (!stillExists) {
           setSelectedInstanceId(loaded[0].id);
         }
       }
+      // Ping servers for instances that have a default server set
+      for (const inst of loaded) {
+        if (inst.serverAutoConnect) {
+          const { host, port } = inst.serverAutoConnect;
+          window.launcher.servers.ping(host, port)
+            .then((result) => setPingResults((prev) => ({ ...prev, [inst.id]: result })))
+            .catch(() => { /* server offline or unreachable — keep globe icon */ });
+        }
+      }
     });
   }, []);
-
-  const handleLaunch = async (instanceId: string) => {
-    setSelectedInstanceId(instanceId);
-    setLaunching(instanceId);
-    try {
-      await window.launcher.game.launch(instanceId);
-    } catch (err: any) {
-      alert(`Launch failed: ${err.message}`);
-    } finally {
-      setLaunching(null);
-    }
-  };
 
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
@@ -58,10 +54,24 @@ export function InstanceList() {
 
   const handleCreated = (instance: InstanceInfo) => {
     setInstances((prev) => [instance, ...prev]);
+    if (instance.serverAutoConnect) {
+      const { host, port } = instance.serverAutoConnect;
+      window.launcher.servers.ping(host, port)
+        .then((result) => setPingResults((prev) => ({ ...prev, [instance.id]: result })))
+        .catch(() => {});
+    }
   };
 
   const handleUpdated = (updated: InstanceInfo) => {
     setInstances((prev) => prev.map((i) => i.id === updated.id ? updated : i));
+    if (updated.serverAutoConnect) {
+      const { host, port } = updated.serverAutoConnect;
+      window.launcher.servers.ping(host, port)
+        .then((result) => setPingResults((prev) => ({ ...prev, [updated.id]: result })))
+        .catch(() => setPingResults((prev) => { const next = { ...prev }; delete next[updated.id]; return next; }));
+    } else {
+      setPingResults((prev) => { const next = { ...prev }; delete next[updated.id]; return next; });
+    }
   };
 
   return (
@@ -86,10 +96,13 @@ export function InstanceList() {
             <div
               key={inst.id}
               className={`instance-card${selectedInstanceId === inst.id ? ' instance-card--selected' : ''}`}
-              onClick={() => !launching && setSelectedInstanceId(inst.id)}
-              style={{ cursor: launching ? 'default' : 'pointer' }}
+              onClick={() => setSelectedInstanceId(inst.id)}
             >
-              <div className="instance-card__icon">🌍</div>
+              <div className="instance-card__icon">
+                {pingResults[inst.id]?.favicon
+                  ? <img src={pingResults[inst.id].favicon!} alt="" className="instance-card__server-icon" />
+                  : '🌍'}
+              </div>
               <div className="instance-card__info">
                 <h3>{inst.name}</h3>
                 <span className="instance-card__version">
@@ -101,6 +114,9 @@ export function InstanceList() {
                     {inst.serverAutoConnect.host}:{inst.serverAutoConnect.port}
                   </span>
                 )}
+                {pingResults[inst.id]?.motd && (
+                  <span className="instance-card__motd">{pingResults[inst.id].motd}</span>
+                )}
                 {inst.lastPlayed && (
                   <span className="instance-card__last-played">
                     Last played {new Date(inst.lastPlayed).toLocaleDateString()}
@@ -110,22 +126,13 @@ export function InstanceList() {
               <button
                 className="instance-card__edit"
                 onClick={(e) => { e.stopPropagation(); setEditingInstance(inst); }}
-                disabled={launching !== null}
                 aria-label={`Edit ${inst.name}`}
               >
-                ✏
-              </button>
-              <button
-                className="instance-card__play"
-                onClick={(e) => { e.stopPropagation(); handleLaunch(inst.id); }}
-                disabled={launching !== null}
-              >
-                {launching === inst.id ? '⏳' : '▶'}
+                ⚙
               </button>
               <button
                 className="instance-card__delete"
                 onClick={(e) => { e.stopPropagation(); handleDelete(inst.id, inst.name); }}
-                disabled={launching !== null}
                 aria-label={`Delete ${inst.name}`}
               >
                 ✕

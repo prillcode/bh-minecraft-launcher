@@ -91,6 +91,11 @@ contextBridge.exposeInMainWorld('launcher', {
     clearCache: () => ipcRenderer.invoke('settings:clear-cache'),
   },
 
+  // ── Servers ───────────────────────────────────────────────────
+  servers: {
+    ping: (host: string, port: number) => ipcRenderer.invoke('servers:ping', host, port),
+  },
+
   // ── Window Controls ───────────────────────────────────────────
   window: {
     minimize: () => ipcRenderer.invoke('window:minimize'),
