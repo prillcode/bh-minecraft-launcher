@@ -219,6 +219,7 @@ declare global {
     type: 'server' | 'singleplayer';
     versionId: string;
     modLoader?: string;
+    gameDirectory: string;
     lastPlayed?: number;
     serverAutoConnect?: { host: string; port: number };
     serverMinecraftVersion?: string;

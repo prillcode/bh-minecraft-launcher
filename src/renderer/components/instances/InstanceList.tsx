@@ -111,13 +111,22 @@ export function InstanceList() {
                   {inst.versionId}
                   {inst.modLoader && inst.modLoader !== 'vanilla' && ` · ${inst.modLoader}`}
                 </span>
-                {inst.type !== 'singleplayer' && inst.serverAutoConnect && (
-                  <span className="instance-card__server">
-                    {inst.serverAutoConnect.host}:{inst.serverAutoConnect.port}
-                  </span>
-                )}
-                {inst.type !== 'singleplayer' && pingResults[inst.id]?.motd && (
-                  <span className="instance-card__motd">{pingResults[inst.id].motd}</span>
+                {inst.type === 'singleplayer' ? (
+                  <>
+                    <span className="instance-card__server">Singleplayer</span>
+                    <span className="instance-card__motd">{inst.gameDirectory}</span>
+                  </>
+                ) : (
+                  <>
+                    {inst.serverAutoConnect && (
+                      <span className="instance-card__server">
+                        {inst.serverAutoConnect.host}:{inst.serverAutoConnect.port}
+                      </span>
+                    )}
+                    {pingResults[inst.id]?.motd && (
+                      <span className="instance-card__motd">{pingResults[inst.id].motd}</span>
+                    )}
+                  </>
                 )}
                 {inst.lastPlayed && (
                   <span className="instance-card__last-played">
