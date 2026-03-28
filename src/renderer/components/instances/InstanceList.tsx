@@ -13,14 +13,14 @@ export function InstanceList() {
   useEffect(() => {
     window.launcher.instances.list().then((list) => {
       setInstances(list);
-      if (loaded.length > 0) {
-        const stillExists = loaded.some((i) => i.id === selectedInstanceId);
+      if (list.length > 0) {
+        const stillExists = list.some((i) => i.id === selectedInstanceId);
         if (!stillExists) {
-          setSelectedInstanceId(loaded[0].id);
+          setSelectedInstanceId(list[0].id);
         }
       }
       // Ping servers for server instances that have a default server set
-      for (const inst of loaded) {
+      for (const inst of list) {
         if (inst.type !== 'singleplayer' && inst.serverAutoConnect) {
           const { host, port } = inst.serverAutoConnect;
           window.launcher.servers.ping(host, port)

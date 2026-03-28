@@ -76,6 +76,12 @@ export function Sidebar() {
                 : selectedInstance.name}
             </span>
             <span className="sidebar__play-type">
+              {selectedInstance.versionId}
+              {selectedInstance.modLoader && selectedInstance.modLoader !== 'vanilla'
+                ? ` · ${selectedInstance.modLoader}`
+                : ''}
+            </span>
+            <span className="sidebar__play-type">
               {selectedInstance.type === 'singleplayer'
                 ? 'Singleplayer'
                 : selectedInstance.serverAutoConnect
