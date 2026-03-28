@@ -56,6 +56,14 @@ interface LauncherAPI {
     update(id: string, config: Partial<InstanceConfig>): Promise<InstanceInfo>;
     delete(id: string): Promise<{ success: boolean }>;
   };
+  shaders: {
+    search(query: string, instanceId: string): Promise<ModSearchResponse>;
+    list(instanceId: string): Promise<ShaderInfo[]>;
+    remove(instanceId: string, fileName: string): Promise<{ success: boolean }>;
+    installModrinth(instanceId: string, versionId: string, packName: string): Promise<ShaderInfo>;
+    installLocal(instanceId: string): Promise<ShaderInfo | null>;
+    onDownloadProgress(cb: (data: { fileName: string; percent: number }) => void): () => void;
+  };
   mods: {
     search(query: string, instanceId: string): Promise<ModSearchResponse>;
     install(instanceId: string, projectId: string, versionId: string, modName: string, modSlug: string): Promise<InstalledModInfo>;
@@ -99,6 +107,12 @@ declare global {
     defaultResolutionHeight: number;
     blockhavenDefaultHost: string;
     blockhavenDefaultPort: number;
+  }
+
+  interface ShaderInfo {
+    fileName: string;
+    fileSize: number;
+    installedAt: number;
   }
 
   interface InstalledModInfo {

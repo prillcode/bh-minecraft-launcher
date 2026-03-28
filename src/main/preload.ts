@@ -57,6 +57,25 @@ contextBridge.exposeInMainWorld('launcher', {
       ipcRenderer.invoke('mods:get-required-deps', instanceId, versionId),
   },
 
+  // ── Shaders ───────────────────────────────────────────────────
+  shaders: {
+    search: (query: string, instanceId: string) =>
+      ipcRenderer.invoke('shaders:search', query, instanceId),
+    list: (instanceId: string) =>
+      ipcRenderer.invoke('shaders:list', instanceId),
+    remove: (instanceId: string, fileName: string) =>
+      ipcRenderer.invoke('shaders:remove', instanceId, fileName),
+    installModrinth: (instanceId: string, versionId: string, packName: string) =>
+      ipcRenderer.invoke('shaders:install-modrinth', instanceId, versionId, packName),
+    installLocal: (instanceId: string) =>
+      ipcRenderer.invoke('shaders:install-local', instanceId),
+    onDownloadProgress: (cb: (data: { fileName: string; percent: number }) => void) => {
+      const handler = (_e: Electron.IpcRendererEvent, data: { fileName: string; percent: number }) => cb(data);
+      ipcRenderer.on('shaders:download-progress', handler);
+      return () => ipcRenderer.removeListener('shaders:download-progress', handler);
+    },
+  },
+
   // ── Java ──────────────────────────────────────────────────────
   java: {
     provision: (component: string) => ipcRenderer.invoke('java:provision', component),

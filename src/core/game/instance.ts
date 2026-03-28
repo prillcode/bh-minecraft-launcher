@@ -42,6 +42,7 @@ export class InstanceManager {
     await fs.mkdir(path.join(gameDirectory, 'mods'), { recursive: true });
     await fs.mkdir(path.join(gameDirectory, 'resourcepacks'), { recursive: true });
     await fs.mkdir(path.join(gameDirectory, 'saves'), { recursive: true });
+    await fs.mkdir(path.join(gameDirectory, 'shaderpacks'), { recursive: true });
 
     const instance: Instance = {
       id,

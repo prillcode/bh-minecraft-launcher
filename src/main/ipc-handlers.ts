@@ -1,4 +1,4 @@
-import { BrowserWindow, shell, app, type IpcMain } from 'electron';
+import { BrowserWindow, shell, app, dialog, type IpcMain } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { createWriteStream } from 'fs';
@@ -404,6 +404,81 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
       logger.info(`Removed mod "${mod.name}" from instance ${instanceId}`);
     }
     return { success: true };
+  });
+
+  // ── Shaders ------------------------------------------------------------
+  ipcMain.handle('shaders:search', async (_e, query: string, instanceId: string) => {
+    const instance = await instanceManager.get(instanceId);
+    return modrinthAPI.search(query, {
+      gameVersion: instance.versionId,
+      projectType: 'shader',
+    });
+  });
+
+  ipcMain.handle('shaders:list', async (_e, instanceId: string) => {
+    const instance = await instanceManager.get(instanceId);
+    const dir = path.join(instance.gameDirectory, 'shaderpacks');
+    await fs.mkdir(dir, { recursive: true });
+    const entries = await fs.readdir(dir);
+    const zips = entries.filter((f) => f.endsWith('.zip'));
+    return Promise.all(
+      zips.map(async (fileName) => {
+        const stat = await fs.stat(path.join(dir, fileName));
+        return { fileName, fileSize: stat.size, installedAt: stat.mtimeMs };
+      }),
+    );
+  });
+
+  ipcMain.handle('shaders:remove', async (_e, instanceId: string, fileName: string) => {
+    const instance = await instanceManager.get(instanceId);
+    await fs.rm(path.join(instance.gameDirectory, 'shaderpacks', fileName), { force: true });
+    return { success: true };
+  });
+
+  ipcMain.handle('shaders:install-modrinth', async (event, instanceId: string, versionId: string, packName: string) => {
+    const version = await modrinthAPI.getVersion(versionId);
+    const primaryFile = version.files.find((f) => f.primary) ?? version.files[0];
+    if (!primaryFile) throw new Error('No file found for version ' + versionId);
+
+    const instance = await instanceManager.get(instanceId);
+    const dir = path.join(instance.gameDirectory, 'shaderpacks');
+    await fs.mkdir(dir, { recursive: true });
+    const dest = path.join(dir, primaryFile.filename);
+
+    const { default: got } = await import('got');
+    const stream = got.stream(primaryFile.url);
+    stream.on('downloadProgress', ({ percent }: { percent: number }) => {
+      event.sender.send('shaders:download-progress', {
+        fileName: primaryFile.filename,
+        percent: Math.round(percent * 100),
+      });
+    });
+    await pipeline(stream, createWriteStream(dest));
+
+    logger.info(`Installed shader pack "${packName}" into instance ${instanceId}`);
+    const stat = await fs.stat(dest);
+    return { fileName: primaryFile.filename, fileSize: stat.size, installedAt: stat.mtimeMs };
+  });
+
+  ipcMain.handle('shaders:install-local', async (_e, instanceId: string) => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: 'Select Shader Pack',
+      filters: [{ name: 'Shader Packs', extensions: ['zip'] }],
+      properties: ['openFile'],
+    });
+    if (canceled || filePaths.length === 0) return null;
+
+    const srcPath = filePaths[0];
+    const fileName = path.basename(srcPath);
+    const instance = await instanceManager.get(instanceId);
+    const dir = path.join(instance.gameDirectory, 'shaderpacks');
+    await fs.mkdir(dir, { recursive: true });
+    const dest = path.join(dir, fileName);
+    await fs.copyFile(srcPath, dest);
+
+    const stat = await fs.stat(dest);
+    logger.info(`Installed local shader pack "${fileName}" into instance ${instanceId}`);
+    return { fileName, fileSize: stat.size, installedAt: stat.mtimeMs };
   });
 
   logger.info('IPC handlers registered');
