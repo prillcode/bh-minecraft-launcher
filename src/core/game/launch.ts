@@ -34,7 +34,10 @@ export class GameLauncher {
     const instance = await this.loadInstance(options.instanceId);
     const version = await this.versionManifest.getVersion(instance.versionId);
 
-    const javaPath = instance.javaPath ?? (await this.javaDetector.findBest(version));
+    const javaPath =
+      instance.javaPath ||
+      options.globalJavaPath ||
+      (await this.javaDetector.findBest(version));
 
     let mainClass = version.mainClass;
     let extraLibs: string[] = [];

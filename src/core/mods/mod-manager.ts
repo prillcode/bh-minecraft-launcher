@@ -40,6 +40,20 @@ export class ModManager {
     logger.info(`Removed mod "${mod?.name ?? projectId}" (${projectId}) from instance ${instanceId}`);
   }
 
+  async setEnabled(instanceId: string, projectId: string, enabled: boolean): Promise<InstalledMod> {
+    const mod = await this.get(instanceId, projectId);
+    if (!mod) throw new Error(`Mod ${projectId} not found in instance ${instanceId}`);
+
+    const newFileName = enabled
+      ? mod.fileName.replace(/\.disabled$/, '')
+      : mod.fileName.endsWith('.disabled') ? mod.fileName : mod.fileName + '.disabled';
+
+    const updated: InstalledMod = { ...mod, enabled, fileName: newFileName };
+    this.store.set(`mods.${instanceId}.${projectId}` as any, updated);
+    logger.info(`Mod "${mod.name}" ${enabled ? 'enabled' : 'disabled'} in instance ${instanceId}`);
+    return updated;
+  }
+
   async isInstalled(instanceId: string, projectId: string): Promise<boolean> {
     return !!(await this.get(instanceId, projectId));
   }

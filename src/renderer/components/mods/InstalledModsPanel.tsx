@@ -9,6 +9,7 @@ export function InstalledModsPanel({ instanceId, refreshKey }: Props) {
   const [mods, setMods] = useState<InstalledModInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!instanceId) return;
@@ -18,6 +19,13 @@ export function InstalledModsPanel({ instanceId, refreshKey }: Props) {
       setLoading(false);
     });
   }, [instanceId, refreshKey]);
+
+  const handleToggle = async (mod: InstalledModInfo) => {
+    setTogglingId(mod.id);
+    const result = await window.launcher.mods.toggle(instanceId, mod.id);
+    setMods(prev => prev.map(m => m.id === mod.id ? { ...m, enabled: result.enabled } : m));
+    setTogglingId(null);
+  };
 
   const handleRemove = async (mod: InstalledModInfo) => {
     if (!window.confirm('Remove "' + mod.name + '"?')) return;
@@ -38,18 +46,32 @@ export function InstalledModsPanel({ instanceId, refreshKey }: Props) {
       ) : (
         <ul className="installed-mods__list">
           {mods.map((mod) => (
-            <li key={mod.id} className="installed-mod-row">
+            <li
+              key={mod.id}
+              className="installed-mod-row"
+              style={{ opacity: mod.enabled ? 1 : 0.5 }}
+            >
               <div className="installed-mod-row__info">
                 <span className="installed-mod-row__name">{mod.name}</span>
                 <span className="installed-mod-row__version">{mod.versionNumber}</span>
               </div>
-              <button
-                className="btn btn--danger btn--sm"
-                onClick={() => handleRemove(mod)}
-                disabled={removingId === mod.id}
-              >
-                {removingId === mod.id ? 'Removing...' : 'Remove'}
-              </button>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  className="btn btn--ghost btn--sm"
+                  onClick={() => handleToggle(mod)}
+                  disabled={togglingId === mod.id}
+                  title={mod.enabled ? 'Disable mod' : 'Enable mod'}
+                >
+                  {mod.enabled ? 'Disable' : 'Enable'}
+                </button>
+                <button
+                  className="btn btn--danger btn--sm"
+                  onClick={() => handleRemove(mod)}
+                  disabled={removingId === mod.id}
+                >
+                  {removingId === mod.id ? 'Removing...' : 'Remove'}
+                </button>
+              </div>
             </li>
           ))}
         </ul>
