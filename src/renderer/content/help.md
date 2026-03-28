@@ -7,7 +7,7 @@ BlockHaven Launcher is a custom Minecraft launcher built for the BlockHaven SMP 
 ### First Launch
 
 1. Sign in with your Microsoft account using the device-code flow shown on the login screen.
-2. The launcher creates a **BlockHaven** instance automatically on first login — ready to connect to `play.bhsmp.com`.
+2. Click **+ New Instance** on the Instances tab to create your first instance.
 3. Select the instance in the sidebar and click **▶ Play** to launch.
 
 ---

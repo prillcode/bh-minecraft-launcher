@@ -11,17 +11,8 @@ export function InstanceList() {
   const { selectedInstanceId, setSelectedInstanceId } = useSelectedInstance();
 
   useEffect(() => {
-    window.launcher.instances.list().then(async (list) => {
-      let loaded = list;
-      if (list.length === 0) {
-        try {
-          const instance = await window.launcher.instances.createBlockhaven();
-          loaded = [instance];
-        } catch {
-          loaded = [];
-        }
-      }
-      setInstances(loaded);
+    window.launcher.instances.list().then((list) => {
+      setInstances(list);
       if (loaded.length > 0) {
         const stillExists = loaded.some((i) => i.id === selectedInstanceId);
         if (!stillExists) {
