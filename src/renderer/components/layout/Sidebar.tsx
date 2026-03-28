@@ -75,7 +75,7 @@ export function Sidebar() {
                 ? selectedInstance.name.slice(0, 40) + '…'
                 : selectedInstance.name}
             </span>
-            <span className="sidebar__play-type">
+            <span className="sidebar__play-type sidebar__play-type--mono">
               {selectedInstance.versionId}
               {selectedInstance.modLoader && selectedInstance.modLoader !== 'vanilla'
                 ? ` · ${selectedInstance.modLoader}`

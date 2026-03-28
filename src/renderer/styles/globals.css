@@ -217,6 +217,10 @@ body {
   white-space: nowrap;
 }
 
+.sidebar__play-type--mono {
+  font-family: var(--font-mono);
+}
+
 .sidebar__play-btn {
   width: 100%;
   padding: 12px 0;
