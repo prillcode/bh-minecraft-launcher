@@ -28,7 +28,7 @@ contextBridge.exposeInMainWorld('launcher', {
     /** Download game files for a version */
     install: (versionId: string) => ipcRenderer.invoke('game:install', versionId),
     /** Launch Minecraft with a given instance config */
-    launch: (instanceId: string) => ipcRenderer.invoke('game:launch', instanceId),
+    launch: (instanceId: string, force = false) => ipcRenderer.invoke('game:launch', instanceId, force),
     /** Kill running game process */
     kill: () => ipcRenderer.invoke('game:kill'),
     /** Detect installed Java runtimes */
@@ -47,9 +47,11 @@ contextBridge.exposeInMainWorld('launcher', {
   // ── Mods ──────────────────────────────────────────────────────
   mods: {
     search: (query: string, instanceId: string) => ipcRenderer.invoke('mods:search', query, instanceId),
+    getProjects: (slugs: string[]) => ipcRenderer.invoke('mods:get-projects', slugs),
     install: (instanceId: string, projectId: string, versionId: string, modName: string, modSlug: string) =>
       ipcRenderer.invoke('mods:install', instanceId, projectId, versionId, modName, modSlug),
     remove: (instanceId: string, projectId: string) => ipcRenderer.invoke('mods:remove', instanceId, projectId),
+    toggle: (instanceId: string, projectId: string) => ipcRenderer.invoke('mods:toggle', instanceId, projectId),
     list: (instanceId: string) => ipcRenderer.invoke('mods:list', instanceId),
     getVersions: (projectId: string, gameVersion: string, loader?: string) =>
       ipcRenderer.invoke('mods:get-versions', projectId, gameVersion, loader),
@@ -89,6 +91,15 @@ contextBridge.exposeInMainWorld('launcher', {
     getAppInfo: () => ipcRenderer.invoke('settings:get-app-info'),
     openDataFolder: () => ipcRenderer.invoke('settings:open-data-folder'),
     clearCache: () => ipcRenderer.invoke('settings:clear-cache'),
+  },
+
+  // ── Notes ─────────────────────────────────────────────────────
+  notes: {
+    list: (instanceId: string) => ipcRenderer.invoke('notes:list', instanceId),
+    create: (instanceId: string, entry: any) => ipcRenderer.invoke('notes:create', instanceId, entry),
+    update: (instanceId: string, entryId: string, patch: any) => ipcRenderer.invoke('notes:update', instanceId, entryId, patch),
+    delete: (instanceId: string, entryId: string) => ipcRenderer.invoke('notes:delete', instanceId, entryId),
+    listScreenshots: (instanceId: string) => ipcRenderer.invoke('notes:list-screenshots', instanceId),
   },
 
   // ── Servers ───────────────────────────────────────────────────

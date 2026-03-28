@@ -8,6 +8,8 @@ import { InstanceList } from './components/instances/InstanceList';
 import { ModsTab } from './components/mods/ModsTab';
 import { ShadersTab } from './components/shaders/ShadersTab';
 import { SettingsPage } from './components/settings/SettingsPage';
+import { HelpPage } from './components/help/HelpPage';
+import { NotesPage } from './components/notes/NotesPage';
 import { useAuthStore } from './stores/auth-store';
 import { SelectedInstanceProvider } from './stores/selected-instance-context';
 
@@ -41,6 +43,8 @@ export function App() {
                 <Route path="/mods" element={<ModsTab />} />
                 <Route path="/shaders" element={<ShadersTab />} />
                 <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/help" element={<HelpPage />} />
+                <Route path="/notes" element={<NotesPage />} />
               </Routes>
             </main>
           </div>

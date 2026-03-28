@@ -40,7 +40,7 @@ interface LauncherAPI {
       }>;
     }>;
     install(versionId: string): Promise<{ success: boolean }>;
-    launch(instanceId: string): Promise<{ pid: number }>;
+    launch(instanceId: string, force?: boolean): Promise<{ pid: number } | { versionMismatch: true; instanceVersion: string; serverVersion: string }>;
     kill(): Promise<{ success: boolean }>;
     detectJava(): Promise<Array<{
       path: string;
@@ -66,8 +66,10 @@ interface LauncherAPI {
   };
   mods: {
     search(query: string, instanceId: string): Promise<ModSearchResponse>;
+    getProjects(slugs: string[]): Promise<ModSearchHit[]>;
     install(instanceId: string, projectId: string, versionId: string, modName: string, modSlug: string): Promise<InstalledModInfo>;
     remove(instanceId: string, projectId: string): Promise<{ success: boolean }>;
+    toggle(instanceId: string, projectId: string): Promise<{ success: boolean; enabled: boolean }>;
     list(instanceId: string): Promise<InstalledModInfo[]>;
     getVersions(projectId: string, gameVersion: string, loader?: string): Promise<ModVersionInfo[]>;
     getRequiredDeps(instanceId: string, versionId: string): Promise<DependencyInfo[]>;
@@ -82,6 +84,13 @@ interface LauncherAPI {
     getAppInfo(): Promise<{ version: string; dataPath: string }>;
     openDataFolder(): Promise<{ success: boolean }>;
     clearCache(): Promise<{ success: boolean }>;
+  };
+  notes: {
+    list(instanceId: string): Promise<NoteEntry[]>;
+    create(instanceId: string, entry: Omit<NoteEntry, 'id' | 'instanceId' | 'createdAt' | 'updatedAt'>): Promise<NoteEntry>;
+    update(instanceId: string, entryId: string, patch: Partial<Pick<NoteEntry, 'title' | 'text' | 'screenshotPaths'>>): Promise<NoteEntry>;
+    delete(instanceId: string, entryId: string): Promise<void>;
+    listScreenshots(instanceId: string): Promise<ScreenshotInfo[]>;
   };
   servers: {
     ping(host: string, port: number): Promise<ServerPingResult>;
@@ -117,6 +126,21 @@ declare global {
     favicon: string | null;
     players: { online: number; max: number } | null;
     version: string | null;
+  }
+
+  interface NoteEntry {
+    id: string;
+    instanceId: string;
+    title: string;
+    text: string;
+    screenshotPaths: string[];
+    createdAt: number;
+    updatedAt: number;
+  }
+
+  interface ScreenshotInfo {
+    fileName: string;
+    filePath: string;
   }
 
   interface ShaderInfo {
@@ -185,6 +209,7 @@ declare global {
     versionId: string;
     modLoader?: 'vanilla' | 'fabric' | 'quilt';
     serverAutoConnect?: { host: string; port: number };
+    serverMinecraftVersion?: string;
   }
 
   interface InstanceInfo {
@@ -194,6 +219,7 @@ declare global {
     modLoader?: string;
     lastPlayed?: number;
     serverAutoConnect?: { host: string; port: number };
+    serverMinecraftVersion?: string;
     createdAt: number;
   }
 }

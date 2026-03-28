@@ -6,7 +6,12 @@ const NAV_ITEMS = [
   { to: '/instances', label: 'Instances', icon: '🎮' },
   { to: '/mods', label: 'Mods', icon: '🧩' },
   { to: '/shaders', label: 'Shaders', icon: '✨' },
+  { to: '/notes', label: 'Notes', icon: '📓' },
   { to: '/settings', label: 'Settings', icon: '⚙️' },
+];
+
+const BOTTOM_NAV_ITEMS = [
+  { to: '/help', label: 'Help', icon: '❓' },
 ];
 
 export function Sidebar() {
@@ -26,7 +31,17 @@ export function Sidebar() {
     setLaunching(true);
     setLaunchError(null);
     try {
-      await window.launcher.game.launch(selectedInstanceId);
+      const result = await window.launcher.game.launch(selectedInstanceId);
+
+      if ('versionMismatch' in result && result.versionMismatch) {
+        setLaunching(false);
+        const proceed = window.confirm(
+          `Server expects Minecraft ${result.serverVersion} but this instance is ${result.instanceVersion}.\n\nLaunch anyway?`
+        );
+        if (!proceed) return;
+        setLaunching(true);
+        await window.launcher.game.launch(selectedInstanceId, true);
+      }
     } catch (err: any) {
       setLaunchError(err.message ?? 'Launch failed.');
     } finally {
@@ -73,6 +88,22 @@ export function Sidebar() {
           </button>
         )}
       </div>
+
+      <ul className="sidebar__nav sidebar__nav--bottom">
+        {BOTTOM_NAV_ITEMS.map((item) => (
+          <li key={item.to}>
+            <NavLink
+              to={item.to}
+              className={({ isActive }) =>
+                `sidebar__link ${isActive ? 'sidebar__link--active' : ''}`
+              }
+            >
+              <span className="sidebar__icon">{item.icon}</span>
+              <span className="sidebar__label">{item.label}</span>
+            </NavLink>
+          </li>
+        ))}
+      </ul>
 
       <div className="sidebar__footer">
         <button

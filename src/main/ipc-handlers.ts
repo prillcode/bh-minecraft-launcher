@@ -17,6 +17,7 @@ import { JavaProvisioner } from '../core/game/java-provisioner';
 import { InstanceManager } from '../core/game/instance';
 import { ModrinthAPI } from '../core/mods/modrinth-api';
 import { ModManager } from '../core/mods/mod-manager';
+import { NotesManager } from '../core/notes/notes-manager';
 import { getSettings, setSetting } from '../core/settings';
 import type { LauncherSettings } from '../core/settings';
 import { getLauncherPaths } from '../core/utils/paths';
@@ -35,6 +36,7 @@ const javaProvisioner = new JavaProvisioner();
 const instanceManager = new InstanceManager();
 const modrinthAPI = new ModrinthAPI();
 const modManager = new ModManager();
+const notesManager = new NotesManager();
 
 export function registerIpcHandlers(ipcMain: IpcMain): void {
   // ── Auth ──────────────────────────────────────────────────────
@@ -151,18 +153,33 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
     return { success: true };
   });
 
-  ipcMain.handle('game:launch', async (event, instanceId: string) => {
+  ipcMain.handle('game:launch', async (event, instanceId: string, force = false) => {
     const stored = await tokenStore.load();
     if (!stored) throw new Error('Not authenticated');
 
     const window = BrowserWindow.fromWebContents(event.sender);
+    const settings = getSettings();
 
     // Auto-install the version if not already downloaded
     const instance = await instanceManager.get(instanceId);
+
+    // Version mismatch check
+    if (
+      !force &&
+      instance.serverAutoConnect &&
+      instance.serverMinecraftVersion &&
+      instance.serverMinecraftVersion !== instance.versionId
+    ) {
+      return {
+        versionMismatch: true as const,
+        instanceVersion: instance.versionId,
+        serverVersion: instance.serverMinecraftVersion,
+      };
+    }
     const version = await versionManifest.getVersion(instance.versionId);
 
-    // Auto-provision JRE if no instance-level java override
-    if (!instance.javaPath) {
+    // Auto-provision JRE if no instance-level or global java override
+    if (!instance.javaPath && !settings.javaPath) {
       const component = version.javaVersion?.component ?? 'java-runtime-delta';
       await javaProvisioner.provision(component, (progress) => {
         window?.webContents.send('download:progress', progress);
@@ -179,6 +196,7 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
       accessToken: isOffline ? 'offline' : stored.minecraft.accessToken,
       profile: stored.profile,
       userType: isOffline ? 'legacy' : 'msa',
+      globalJavaPath: settings.javaPath || undefined,
       onProgress: (progress) => window?.webContents.send('download:progress', progress),
       onStdout: (data) => {
         logger.debug(`[MC] ${data.trimEnd()}`);
@@ -188,8 +206,17 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
         logger.debug(`[MC] ${data.trimEnd()}`);
         window?.webContents.send('launch:stderr', data);
       },
-      onExit: (code) => window?.webContents.send('launch:exit', code),
+      onExit: (code) => {
+        if (settings.closeOnLaunch) {
+          window?.show();
+        }
+        window?.webContents.send('launch:exit', code);
+      },
     });
+
+    if (settings.closeOnLaunch) {
+      window?.hide();
+    }
 
     return { pid: child.pid };
   });
@@ -289,6 +316,10 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
   });
 
   // ── Mods ---------------------------------------------------------------
+  ipcMain.handle('mods:get-projects', async (_e, slugs: string[]) => {
+    return modrinthAPI.getProjects(slugs);
+  });
+
   ipcMain.handle('mods:search', async (_e, query: string, instanceId: string) => {
     const instance = await instanceManager.get(instanceId);
     return modrinthAPI.search(query, {
@@ -407,6 +438,24 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
     return { success: true };
   });
 
+  ipcMain.handle('mods:toggle', async (_e, instanceId: string, projectId: string) => {
+    const mod = await modManager.get(instanceId, projectId);
+    if (!mod) throw new Error(`Mod ${projectId} not found`);
+
+    const instance = await instanceManager.get(instanceId);
+    const modsDir = path.join(instance.gameDirectory, 'mods');
+    const currentPath = path.join(modsDir, mod.fileName);
+    const newEnabled = !mod.enabled;
+    const newFileName = newEnabled
+      ? mod.fileName.replace(/\.disabled$/, '')
+      : mod.fileName + '.disabled';
+    const newPath = path.join(modsDir, newFileName);
+
+    await fs.rename(currentPath, newPath);
+    const updated = await modManager.setEnabled(instanceId, projectId, newEnabled);
+    return { success: true, enabled: updated.enabled };
+  });
+
   // ── Shaders ------------------------------------------------------------
   ipcMain.handle('shaders:search', async (_e, query: string, instanceId: string) => {
     const instance = await instanceManager.get(instanceId);
@@ -485,6 +534,40 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
   // ── Servers ───────────────────────────────────────────────────
   ipcMain.handle('servers:ping', async (_e, host: string, port: number) => {
     return pingMinecraftServer(host, port);
+  });
+
+  // ── Notes ──────────────────────────────────────────────────────
+  ipcMain.handle('notes:list', (_e, instanceId: string) =>
+    notesManager.list(instanceId),
+  );
+
+  ipcMain.handle('notes:create', (_e, instanceId: string, entry: any) =>
+    notesManager.create(instanceId, entry),
+  );
+
+  ipcMain.handle('notes:update', (_e, instanceId: string, entryId: string, patch: any) =>
+    notesManager.update(instanceId, entryId, patch),
+  );
+
+  ipcMain.handle('notes:delete', (_e, instanceId: string, entryId: string) =>
+    notesManager.delete(instanceId, entryId),
+  );
+
+  ipcMain.handle('notes:list-screenshots', async (_e, instanceId: string) => {
+    const instance = await instanceManager.get(instanceId);
+    const screenshotsDir = path.join(instance.gameDirectory, 'screenshots');
+    try {
+      const entries = await fs.readdir(screenshotsDir);
+      const shots = entries
+        .filter((f) => /\.(png|jpg|jpeg)$/i.test(f))
+        .map((fileName) => ({ fileName, filePath: path.join(screenshotsDir, fileName) }));
+      const withMtime = await Promise.all(
+        shots.map(async (s) => ({ ...s, mtime: (await fs.stat(s.filePath)).mtimeMs })),
+      );
+      return withMtime.sort((a, b) => b.mtime - a.mtime).map(({ fileName, filePath }) => ({ fileName, filePath }));
+    } catch {
+      return [];
+    }
   });
 
   logger.info('IPC handlers registered');
