@@ -71,8 +71,8 @@ export function Sidebar() {
         {selectedInstance ? (
           <>
             <span className="sidebar__play-instance" title={selectedInstance.name}>
-              {selectedInstance.name.length > 22
-                ? selectedInstance.name.slice(0, 22) + '…'
+              {selectedInstance.name.length > 40
+                ? selectedInstance.name.slice(0, 40) + '…'
                 : selectedInstance.name}
             </span>
             <button
