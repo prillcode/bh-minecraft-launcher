@@ -100,6 +100,23 @@
 
 ---
 
+### Phase 07: Imported Instance Type
+**Status:** 📋 Planned
+
+**Goals:**
+- Add `'imported'` as a third Instance type alongside `'server'` and `'singleplayer'`
+- Imported instances point at an existing game directory on disk (official launcher,
+  Prism, MultiMC, ATLauncher) — no files moved or copied
+- Native directory picker via Electron dialog
+- Full help docs audit: fix all stale content + document all three instance types
+
+**Plans:**
+- [07-01-PLAN.md](phases/07-imported-instance-type/07-01-PLAN.md) — Backend: type union, mkdir guard, directory picker IPC + preload
+- [07-02-PLAN.md](phases/07-imported-instance-type/07-02-PLAN.md) — UI: create/edit modals, instance card, sidebar label
+- [07-03-PLAN.md](phases/07-imported-instance-type/07-03-PLAN.md) — Help docs: full audit + Instance Types section
+
+---
+
 ## Notes
 
 - Strategy Guide deferred: planned as separate web-hosted content (GitHub Pages or similar);
