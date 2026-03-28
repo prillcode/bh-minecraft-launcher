@@ -4,6 +4,7 @@ import { NavLink } from 'react-router-dom';
 const NAV_ITEMS = [
   { to: '/instances', label: 'Instances', icon: '🎮' },
   { to: '/mods', label: 'Mods', icon: '🧩' },
+  { to: '/shaders', label: 'Shaders', icon: '✨' },
   { to: '/settings', label: 'Settings', icon: '⚙️' },
 ];
 
