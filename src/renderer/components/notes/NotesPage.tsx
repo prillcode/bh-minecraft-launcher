@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSelectedInstance } from '../../stores/selected-instance-context';
 
 function timeAgo(ms: number): string {
@@ -13,6 +14,8 @@ function timeAgo(ms: number): string {
 
 export function NotesPage() {
   const { selectedInstanceId } = useSelectedInstance();
+  const navigate = useNavigate();
+  const [instances, setInstances] = useState<InstanceInfo[]>([]);
   const [notes, setNotes] = useState<NoteEntry[]>([]);
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -25,6 +28,11 @@ export function NotesPage() {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeNote = notes.find((n) => n.id === activeNoteId) ?? null;
+  const selectedInstance = instances.find((i) => i.id === selectedInstanceId) ?? null;
+
+  useEffect(() => {
+    window.launcher.instances.list().then(setInstances);
+  }, [selectedInstanceId]);
 
   // Reload notes when instance changes
   useEffect(() => {
@@ -122,6 +130,31 @@ export function NotesPage() {
       {/* Left pane — note list */}
       <div className="notes__list">
         <div className="notes__list-header">
+          <h2 style={{ margin: '0 0 8px' }}>Game Notes</h2>
+
+          <div className="mods__instance-header">
+            {selectedInstance ? (
+              <>
+                <span className="mods__instance-label">
+                  <strong>{selectedInstance.name}</strong>
+                  {selectedInstance.serverAutoConnect && (
+                    <> · {selectedInstance.serverAutoConnect.host}</>
+                  )}
+                </span>
+                <button className="btn btn--ghost btn--sm" onClick={() => navigate('/instances')}>
+                  ← Change
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="mods__instance-label mods__instance-label--none">No instance selected</span>
+                <button className="btn btn--ghost btn--sm" onClick={() => navigate('/instances')}>
+                  ← Select
+                </button>
+              </>
+            )}
+          </div>
+
           <button
             className="btn btn--primary btn--sm"
             style={{ width: '100%' }}

@@ -6,7 +6,7 @@ const NAV_ITEMS = [
   { to: '/instances', label: 'Instances', icon: '🎮' },
   { to: '/mods', label: 'Mods', icon: '🧩' },
   { to: '/shaders', label: 'Shaders', icon: '✨' },
-  { to: '/notes', label: 'Notes', icon: '📓' },
+  { to: '/notes', label: 'Game Notes', icon: '📓' },
   { to: '/settings', label: 'Settings', icon: '⚙️' },
 ];
 
@@ -110,7 +110,7 @@ export function Sidebar() {
           className="sidebar__logout"
           onClick={() => window.launcher.auth.logout().then(() => window.location.reload())}
         >
-          Sign Out
+          Sign Out / Change User
         </button>
       </div>
     </nav>

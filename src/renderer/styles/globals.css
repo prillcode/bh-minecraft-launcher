@@ -210,13 +210,13 @@ body {
 
 .sidebar__play-btn {
   width: 100%;
-  padding: 8px 0;
-  background: var(--accent);
+  padding: 12px 0;
+  background: #c8960c;
   color: #fff;
   border: none;
   border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
   transition: opacity 0.15s;
 }
@@ -354,9 +354,11 @@ body {
 }
 
 .login-card__logo {
-  font-size: 48px;
+  width: 64px;
+  height: 64px;
   display: block;
-  margin-bottom: 12px;
+  margin: 0 auto 12px;
+  object-fit: contain;
 }
 
 .login-card__header h1 {

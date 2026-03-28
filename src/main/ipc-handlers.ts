@@ -334,7 +334,9 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
   });
 
   ipcMain.handle('mods:get-versions', async (_e, projectId: string, gameVersion: string, loader?: string) => {
-    const loaders = loader && loader !== 'vanilla' ? [loader] : undefined;
+    const loaders = loader && loader !== 'vanilla'
+      ? loader === 'quilt' ? ['quilt', 'fabric'] : [loader]
+      : undefined;
     return modrinthAPI.getVersions(projectId, {
       gameVersions: [gameVersion],
       loaders,

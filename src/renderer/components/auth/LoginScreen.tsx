@@ -96,7 +96,7 @@ export function LoginScreen() {
       </div>
       <div className="login-card">
         <div className="login-card__header">
-          <span className="login-card__logo">⛏</span>
+          <img src="./icon.png" alt="BlockHaven" className="login-card__logo" />
           <h1>BlockHaven</h1>
           <p className="login-card__subtitle">Minecraft Launcher</p>
         </div>
