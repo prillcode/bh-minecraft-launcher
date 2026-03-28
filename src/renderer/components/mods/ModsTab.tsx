@@ -68,6 +68,15 @@ export function ModsTab() {
     }
   };
 
+  useEffect(() => {
+    if (!selectedInstanceId || query.length < 2) {
+      setResults([]);
+      return;
+    }
+    const timer = setTimeout(handleSearch, 350);
+    return () => clearTimeout(timer);
+  }, [query, selectedInstanceId]);
+
   return (
     <div className="mods">
       <div className="mods__header">
@@ -144,6 +153,8 @@ export function ModsTab() {
           onInstalled={() => {
             setVersionPickerMod(null);
             setInstalledRefreshKey((k) => k + 1);
+            setQuery('');
+            setResults([]);
           }}
         />
       )}
