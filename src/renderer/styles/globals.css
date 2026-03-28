@@ -209,6 +209,14 @@ body {
   white-space: nowrap;
 }
 
+.sidebar__play-type {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
 .sidebar__play-btn {
   width: 100%;
   padding: 12px 0;

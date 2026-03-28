@@ -111,7 +111,7 @@ export function InstanceList() {
                   <>
                     {inst.serverAutoConnect && (
                       <span className="instance-card__server">
-                        {inst.serverAutoConnect.host}:{inst.serverAutoConnect.port}
+                        Multiplayer — {inst.serverAutoConnect.host}:{inst.serverAutoConnect.port}
                       </span>
                     )}
                     {pingResults[inst.id]?.motd && (

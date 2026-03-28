@@ -75,6 +75,13 @@ export function Sidebar() {
                 ? selectedInstance.name.slice(0, 40) + '…'
                 : selectedInstance.name}
             </span>
+            <span className="sidebar__play-type">
+              {selectedInstance.type === 'singleplayer'
+                ? 'Singleplayer'
+                : selectedInstance.serverAutoConnect
+                  ? `Multiplayer — ${selectedInstance.serverAutoConnect.host}`
+                  : 'Multiplayer'}
+            </span>
             <button
               className="sidebar__play-btn"
               onClick={handlePlay}
@@ -114,7 +121,7 @@ export function Sidebar() {
           className="sidebar__logout"
           onClick={() => window.launcher.auth.logout().then(() => window.location.reload())}
         >
-          Sign Out / Change User
+          Sign Out / Switch Account
         </button>
       </div>
     </nav>
