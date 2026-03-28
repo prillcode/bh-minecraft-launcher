@@ -496,6 +496,11 @@ body {
   border-color: var(--border);
 }
 
+.instance-card--selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
 .instance-card__icon {
   font-size: 28px;
   width: 48px;

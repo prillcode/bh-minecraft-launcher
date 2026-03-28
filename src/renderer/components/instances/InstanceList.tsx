@@ -1,29 +1,39 @@
 import React, { useEffect, useState } from 'react';
 import { CreateInstanceModal } from './CreateInstanceModal';
 import { EditInstanceModal } from './EditInstanceModal';
+import { useSelectedInstance } from '../../stores/selected-instance-context';
 
 export function InstanceList() {
   const [instances, setInstances] = useState<InstanceInfo[]>([]);
   const [launching, setLaunching] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingInstance, setEditingInstance] = useState<InstanceInfo | null>(null);
+  const { selectedInstanceId, setSelectedInstanceId } = useSelectedInstance();
 
   useEffect(() => {
     window.launcher.instances.list().then(async (list) => {
+      let loaded = list;
       if (list.length === 0) {
         try {
           const instance = await window.launcher.instances.createBlockhaven();
-          setInstances([instance]);
+          loaded = [instance];
         } catch {
-          setInstances([]);
+          loaded = [];
         }
-      } else {
-        setInstances(list);
+      }
+      setInstances(loaded);
+      // Auto-select first if nothing is currently selected or selection no longer exists
+      if (loaded.length > 0) {
+        const stillExists = loaded.some((i) => i.id === selectedInstanceId);
+        if (!stillExists) {
+          setSelectedInstanceId(loaded[0].id);
+        }
       }
     });
   }, []);
 
   const handleLaunch = async (instanceId: string) => {
+    setSelectedInstanceId(instanceId);
     setLaunching(instanceId);
     try {
       await window.launcher.game.launch(instanceId);
@@ -37,7 +47,13 @@ export function InstanceList() {
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
     await window.launcher.instances.delete(id);
-    setInstances((prev) => prev.filter((i) => i.id !== id));
+    setInstances((prev) => {
+      const remaining = prev.filter((i) => i.id !== id);
+      if (selectedInstanceId === id) {
+        setSelectedInstanceId(remaining.length > 0 ? remaining[0].id : '');
+      }
+      return remaining;
+    });
   };
 
   const handleCreated = (instance: InstanceInfo) => {
@@ -69,8 +85,8 @@ export function InstanceList() {
           {instances.map((inst) => (
             <div
               key={inst.id}
-              className="instance-card"
-              onClick={() => !launching && setEditingInstance(inst)}
+              className={`instance-card${selectedInstanceId === inst.id ? ' instance-card--selected' : ''}`}
+              onClick={() => !launching && setSelectedInstanceId(inst.id)}
               style={{ cursor: launching ? 'default' : 'pointer' }}
             >
               <div className="instance-card__icon">🌍</div>
@@ -91,6 +107,14 @@ export function InstanceList() {
                   </span>
                 )}
               </div>
+              <button
+                className="instance-card__edit"
+                onClick={(e) => { e.stopPropagation(); setEditingInstance(inst); }}
+                disabled={launching !== null}
+                aria-label={`Edit ${inst.name}`}
+              >
+                ✏
+              </button>
               <button
                 className="instance-card__play"
                 onClick={(e) => { e.stopPropagation(); handleLaunch(inst.id); }}
