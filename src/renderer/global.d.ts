@@ -207,6 +207,7 @@ declare global {
   interface InstanceConfig {
     name: string;
     versionId: string;
+    type?: 'server' | 'singleplayer';
     modLoader?: 'vanilla' | 'fabric' | 'quilt';
     serverAutoConnect?: { host: string; port: number };
     serverMinecraftVersion?: string;
@@ -215,6 +216,7 @@ declare global {
   interface InstanceInfo {
     id: string;
     name: string;
+    type: 'server' | 'singleplayer';
     versionId: string;
     modLoader?: string;
     lastPlayed?: number;

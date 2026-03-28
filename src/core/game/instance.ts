@@ -47,6 +47,7 @@ export class InstanceManager {
     const instance: Instance = {
       id,
       name: config.name,
+      type: config.type ?? 'server',
       versionId: config.versionId,
       modLoader: config.modLoader ?? 'vanilla',
       modLoaderVersion: config.modLoaderVersion,

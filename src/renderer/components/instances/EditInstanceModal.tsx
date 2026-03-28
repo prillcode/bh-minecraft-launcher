@@ -8,6 +8,9 @@ interface Props {
 
 export function EditInstanceModal({ instance, onClose, onUpdate }: Props) {
   const [name, setName] = useState(instance.name);
+  const [instanceType, setInstanceType] = useState<'server' | 'singleplayer'>(
+    instance.type === 'singleplayer' ? 'singleplayer' : 'server',
+  );
   const [versionId, setVersionId] = useState(instance.versionId);
   const [modLoader, setModLoader] = useState<'vanilla' | 'fabric' | 'quilt'>(
     instance.modLoader === 'fabric' ? 'fabric' : instance.modLoader === 'quilt' ? 'quilt' : 'vanilla',
@@ -52,12 +55,13 @@ export function EditInstanceModal({ instance, onClose, onUpdate }: Props) {
     try {
       const config: Partial<InstanceConfig> = {
         name: name.trim(),
+        type: instanceType,
         versionId,
         modLoader,
-        ...(serverHost.trim()
+        ...(instanceType === 'server' && serverHost.trim()
           ? { serverAutoConnect: { host: serverHost.trim(), port: parseInt(serverPort, 10) || 25565 } }
           : { serverAutoConnect: undefined }),
-        serverMinecraftVersion: serverVersion.trim() || undefined,
+        serverMinecraftVersion: instanceType === 'server' ? (serverVersion.trim() || undefined) : undefined,
       };
       const updated = await window.launcher.instances.update(instance.id, config);
       onUpdate(updated);
@@ -77,6 +81,18 @@ export function EditInstanceModal({ instance, onClose, onUpdate }: Props) {
         </div>
 
         <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="ei-type">Instance Type</label>
+            <select
+              id="ei-type"
+              value={instanceType}
+              onChange={(e) => setInstanceType(e.target.value as 'server' | 'singleplayer')}
+            >
+              <option value="server">Server</option>
+              <option value="singleplayer">Singleplayer</option>
+            </select>
+          </div>
+
           <div className="form-group">
             <label htmlFor="ei-name">Instance Name</label>
             <input
@@ -120,45 +136,49 @@ export function EditInstanceModal({ instance, onClose, onUpdate }: Props) {
             </select>
           </div>
 
-          <div className="form-group">
-            <label>Auto-connect to server <span className="form-group__hint" style={{ display: 'inline' }}>(optional)</span></label>
-            <div className="form-row">
-              <input
-                type="text"
-                value={serverHost}
-                onChange={(e) => setServerHost(e.target.value)}
-                placeholder="e.g. mc.example.com"
-                style={{ flex: 2 }}
-              />
-              <input
-                type="number"
-                value={serverPort}
-                onChange={(e) => setServerPort(e.target.value)}
-                placeholder="25565"
-                min={1}
-                max={65535}
-                style={{ flex: 1 }}
-              />
-            </div>
-            <p className="form-group__hint">Leave host empty to remove auto-connect.</p>
-          </div>
+          {instanceType === 'server' && (
+            <>
+              <div className="form-group">
+                <label>Auto-connect to server <span className="form-group__hint" style={{ display: 'inline' }}>(optional)</span></label>
+                <div className="form-row">
+                  <input
+                    type="text"
+                    value={serverHost}
+                    onChange={(e) => setServerHost(e.target.value)}
+                    placeholder="e.g. mc.example.com"
+                    style={{ flex: 2 }}
+                  />
+                  <input
+                    type="number"
+                    value={serverPort}
+                    onChange={(e) => setServerPort(e.target.value)}
+                    placeholder="25565"
+                    min={1}
+                    max={65535}
+                    style={{ flex: 1 }}
+                  />
+                </div>
+                <p className="form-group__hint">Leave host empty to remove auto-connect.</p>
+              </div>
 
-          <div className="form-group">
-            <label htmlFor="ei-server-version">
-              Server Minecraft Version{' '}
-              <span className="form-group__hint" style={{ display: 'inline' }}>(optional)</span>
-            </label>
-            <input
-              id="ei-server-version"
-              type="text"
-              value={serverVersion}
-              onChange={(e) => setServerVersion(e.target.value)}
-              placeholder="e.g. 1.21.1"
-            />
-            <p className="form-group__hint">
-              If set, you'll be warned before launching when your instance version differs.
-            </p>
-          </div>
+              <div className="form-group">
+                <label htmlFor="ei-server-version">
+                  Server Minecraft Version{' '}
+                  <span className="form-group__hint" style={{ display: 'inline' }}>(optional)</span>
+                </label>
+                <input
+                  id="ei-server-version"
+                  type="text"
+                  value={serverVersion}
+                  onChange={(e) => setServerVersion(e.target.value)}
+                  placeholder="e.g. 1.21.1"
+                />
+                <p className="form-group__hint">
+                  If set, you'll be warned before launching when your instance version differs.
+                </p>
+              </div>
+            </>
+          )}
 
           {error && <p style={{ color: 'var(--danger)', fontSize: '12px', marginBottom: '12px' }}>{error}</p>}
 

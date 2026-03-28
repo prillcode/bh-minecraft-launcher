@@ -28,9 +28,9 @@ export function InstanceList() {
           setSelectedInstanceId(loaded[0].id);
         }
       }
-      // Ping servers for instances that have a default server set
+      // Ping servers for server instances that have a default server set
       for (const inst of loaded) {
-        if (inst.serverAutoConnect) {
+        if (inst.type !== 'singleplayer' && inst.serverAutoConnect) {
           const { host, port } = inst.serverAutoConnect;
           window.launcher.servers.ping(host, port)
             .then((result) => setPingResults((prev) => ({ ...prev, [inst.id]: result })))
@@ -54,7 +54,7 @@ export function InstanceList() {
 
   const handleCreated = (instance: InstanceInfo) => {
     setInstances((prev) => [instance, ...prev]);
-    if (instance.serverAutoConnect) {
+    if (instance.type !== 'singleplayer' && instance.serverAutoConnect) {
       const { host, port } = instance.serverAutoConnect;
       window.launcher.servers.ping(host, port)
         .then((result) => setPingResults((prev) => ({ ...prev, [instance.id]: result })))
@@ -64,7 +64,7 @@ export function InstanceList() {
 
   const handleUpdated = (updated: InstanceInfo) => {
     setInstances((prev) => prev.map((i) => i.id === updated.id ? updated : i));
-    if (updated.serverAutoConnect) {
+    if (updated.type !== 'singleplayer' && updated.serverAutoConnect) {
       const { host, port } = updated.serverAutoConnect;
       window.launcher.servers.ping(host, port)
         .then((result) => setPingResults((prev) => ({ ...prev, [updated.id]: result })))
@@ -99,9 +99,11 @@ export function InstanceList() {
               onClick={() => setSelectedInstanceId(inst.id)}
             >
               <div className="instance-card__icon">
-                {pingResults[inst.id]?.favicon
-                  ? <img src={pingResults[inst.id].favicon!} alt="" className="instance-card__server-icon" />
-                  : '🌍'}
+                {inst.type === 'singleplayer'
+                  ? '🌳'
+                  : pingResults[inst.id]?.favicon
+                    ? <img src={pingResults[inst.id].favicon!} alt="" className="instance-card__server-icon" />
+                    : '🌍'}
               </div>
               <div className="instance-card__info">
                 <h3>{inst.name}</h3>
@@ -109,12 +111,12 @@ export function InstanceList() {
                   {inst.versionId}
                   {inst.modLoader && inst.modLoader !== 'vanilla' && ` · ${inst.modLoader}`}
                 </span>
-                {inst.serverAutoConnect && (
+                {inst.type !== 'singleplayer' && inst.serverAutoConnect && (
                   <span className="instance-card__server">
                     {inst.serverAutoConnect.host}:{inst.serverAutoConnect.port}
                   </span>
                 )}
-                {pingResults[inst.id]?.motd && (
+                {inst.type !== 'singleplayer' && pingResults[inst.id]?.motd && (
                   <span className="instance-card__motd">{pingResults[inst.id].motd}</span>
                 )}
                 {inst.lastPlayed && (

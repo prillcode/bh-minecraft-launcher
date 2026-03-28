@@ -7,6 +7,7 @@ interface Props {
 
 export function CreateInstanceModal({ onClose, onCreate }: Props) {
   const [name, setName] = useState('');
+  const [instanceType, setInstanceType] = useState<'server' | 'singleplayer'>('server');
   const [versionId, setVersionId] = useState('');
   const [modLoader, setModLoader] = useState<'vanilla' | 'fabric' | 'quilt'>('vanilla');
   const [serverHost, setServerHost] = useState('');
@@ -50,9 +51,10 @@ export function CreateInstanceModal({ onClose, onCreate }: Props) {
     try {
       const config: InstanceConfig = {
         name: name.trim(),
+        type: instanceType,
         versionId,
         modLoader,
-        ...(serverHost.trim()
+        ...(instanceType === 'server' && serverHost.trim()
           ? { serverAutoConnect: { host: serverHost.trim(), port: parseInt(serverPort, 10) || 25565 } }
           : {}),
       };
@@ -74,6 +76,18 @@ export function CreateInstanceModal({ onClose, onCreate }: Props) {
         </div>
 
         <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="ci-type">Instance Type</label>
+            <select
+              id="ci-type"
+              value={instanceType}
+              onChange={(e) => setInstanceType(e.target.value as 'server' | 'singleplayer')}
+            >
+              <option value="server">Server</option>
+              <option value="singleplayer">Singleplayer</option>
+            </select>
+          </div>
+
           <div className="form-group">
             <label htmlFor="ci-name">Instance Name</label>
             <input
@@ -117,28 +131,30 @@ export function CreateInstanceModal({ onClose, onCreate }: Props) {
             </select>
           </div>
 
-          <div className="form-group">
-            <label>Auto-connect to server <span className="form-group__hint" style={{ display: 'inline' }}>(optional)</span></label>
-            <div className="form-row">
-              <input
-                type="text"
-                value={serverHost}
-                onChange={(e) => setServerHost(e.target.value)}
-                placeholder="e.g. mc.example.com"
-                style={{ flex: 2 }}
-              />
-              <input
-                type="number"
-                value={serverPort}
-                onChange={(e) => setServerPort(e.target.value)}
-                placeholder="25565"
-                min={1}
-                max={65535}
-                style={{ flex: 1 }}
-              />
+          {instanceType === 'server' && (
+            <div className="form-group">
+              <label>Auto-connect to server <span className="form-group__hint" style={{ display: 'inline' }}>(optional)</span></label>
+              <div className="form-row">
+                <input
+                  type="text"
+                  value={serverHost}
+                  onChange={(e) => setServerHost(e.target.value)}
+                  placeholder="e.g. mc.example.com"
+                  style={{ flex: 2 }}
+                />
+                <input
+                  type="number"
+                  value={serverPort}
+                  onChange={(e) => setServerPort(e.target.value)}
+                  placeholder="25565"
+                  min={1}
+                  max={65535}
+                  style={{ flex: 1 }}
+                />
+              </div>
+              <p className="form-group__hint">Leave host empty to skip auto-connect.</p>
             </div>
-            <p className="form-group__hint">Leave host empty to skip auto-connect.</p>
-          </div>
+          )}
 
           {error && <p style={{ color: 'var(--danger)', fontSize: '12px', marginBottom: '12px' }}>{error}</p>}
 
