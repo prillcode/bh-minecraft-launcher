@@ -70,6 +70,30 @@ Click **Install from file** to pick a `.zip` shader pack from your computer.
 
 ---
 
+## Session Notes
+
+Session Notes is a per-instance journal for recording waypoints, base coordinates, points of interest, and anything else worth remembering from your multiplayer sessions.
+
+### Creating a Note
+
+Select an instance, then click **+ New Note**. A new note opens in the editor immediately — give it a title and start writing.
+
+### Auto-Save
+
+Notes save automatically as you type. There is no Save button — changes are written within half a second of your last keystroke.
+
+### Adding Screenshots
+
+In-game screenshots (taken with **F2**) are stored in your instance's `screenshots/` folder. Click **Browse Screenshots** in the editor to open a picker showing all available screenshots. Select any you want to attach, then click **Add Selected**.
+
+To remove a screenshot from a note, hover over its thumbnail and click the **×** button that appears.
+
+### Deleting a Note
+
+Click **Delete** in the note editor header. The note is removed immediately — this cannot be undone.
+
+---
+
 ## Settings
 
 ### Memory
