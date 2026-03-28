@@ -70,7 +70,11 @@ export function Sidebar() {
       <div className="sidebar__play">
         {selectedInstance ? (
           <>
-            <span className="sidebar__play-instance">{selectedInstance.name}</span>
+            <span className="sidebar__play-instance" title={selectedInstance.name}>
+              {selectedInstance.name.length > 22
+                ? selectedInstance.name.slice(0, 22) + '…'
+                : selectedInstance.name}
+            </span>
             <button
               className="sidebar__play-btn"
               onClick={handlePlay}
