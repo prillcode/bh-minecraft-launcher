@@ -257,6 +257,17 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
     return { success: true };
   });
 
+  ipcMain.handle('instances:pick-directory', async () => {
+    const win = BrowserWindow.getFocusedWindow();
+    const result = await dialog.showOpenDialog(win ?? new BrowserWindow(), {
+      title: 'Select Minecraft Game Directory',
+      properties: ['openDirectory'],
+      buttonLabel: 'Select Folder',
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
+    return result.filePaths[0];
+  });
+
   ipcMain.handle('instances:create-blockhaven', async () => {
     const host = process.env.BLOCKHAVEN_SERVER_HOST || 'play.bhsmp.com';
     const port = parseInt(process.env.BLOCKHAVEN_SERVER_PORT || '25565', 10);

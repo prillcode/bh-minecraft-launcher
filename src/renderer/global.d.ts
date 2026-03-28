@@ -55,6 +55,7 @@ interface LauncherAPI {
     createBlockhaven(): Promise<InstanceInfo>;
     update(id: string, config: Partial<InstanceConfig>): Promise<InstanceInfo>;
     delete(id: string): Promise<{ success: boolean }>;
+    pickDirectory(): Promise<string | null>;
   };
   shaders: {
     search(query: string, instanceId: string): Promise<ModSearchResponse>;
@@ -207,7 +208,8 @@ declare global {
   interface InstanceConfig {
     name: string;
     versionId: string;
-    type?: 'server' | 'singleplayer';
+    type?: 'server' | 'singleplayer' | 'imported';
+    gameDirectory?: string;
     modLoader?: 'vanilla' | 'fabric' | 'quilt';
     serverAutoConnect?: { host: string; port: number };
     serverMinecraftVersion?: string;
@@ -216,7 +218,7 @@ declare global {
   interface InstanceInfo {
     id: string;
     name: string;
-    type: 'server' | 'singleplayer';
+    type: 'server' | 'singleplayer' | 'imported';
     versionId: string;
     modLoader?: string;
     gameDirectory: string;

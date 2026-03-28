@@ -36,13 +36,24 @@ export class InstanceManager {
 
   async create(config: Partial<Instance> & { name: string; versionId: string }): Promise<Instance> {
     const id = randomUUID();
-    const gameDirectory = path.join(getLauncherPaths().instances, id);
 
-    await fs.mkdir(gameDirectory, { recursive: true });
-    await fs.mkdir(path.join(gameDirectory, 'mods'), { recursive: true });
-    await fs.mkdir(path.join(gameDirectory, 'resourcepacks'), { recursive: true });
-    await fs.mkdir(path.join(gameDirectory, 'saves'), { recursive: true });
-    await fs.mkdir(path.join(gameDirectory, 'shaderpacks'), { recursive: true });
+    if (config.type === 'imported') {
+      if (!config.gameDirectory) {
+        throw new Error('gameDirectory is required for imported instances');
+      }
+    }
+
+    const gameDirectory = config.type === 'imported'
+      ? config.gameDirectory!
+      : path.join(getLauncherPaths().instances, id);
+
+    if (config.type !== 'imported') {
+      await fs.mkdir(gameDirectory, { recursive: true });
+      await fs.mkdir(path.join(gameDirectory, 'mods'), { recursive: true });
+      await fs.mkdir(path.join(gameDirectory, 'resourcepacks'), { recursive: true });
+      await fs.mkdir(path.join(gameDirectory, 'saves'), { recursive: true });
+      await fs.mkdir(path.join(gameDirectory, 'shaderpacks'), { recursive: true });
+    }
 
     const instance: Instance = {
       id,

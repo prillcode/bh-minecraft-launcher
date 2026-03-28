@@ -79,7 +79,7 @@ export interface DownloadInfo {
 export interface Instance {
   id: string;
   name: string;
-  type: 'server' | 'singleplayer';
+  type: 'server' | 'singleplayer' | 'imported';
   versionId: string;
   modLoader?: 'vanilla' | 'forge' | 'fabric' | 'quilt';
   modLoaderVersion?: string;
