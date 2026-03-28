@@ -92,6 +92,7 @@ export interface Instance {
     host: string;
     port: number;
   };
+  serverMinecraftVersion?: string;  // Expected MC version on connected server (for mismatch warning)
   lastPlayed?: number;
   createdAt: number;
 }
@@ -119,6 +120,7 @@ export interface LaunchOptions {
   accessToken: string;
   profile: { id: string; name: string };
   userType?: 'msa' | 'legacy';
+  globalJavaPath?: string;   // from global settings, used when instance has no per-instance override
   onProgress?: (progress: DownloadProgress) => void;
   onStdout?: (data: string) => void;
   onStderr?: (data: string) => void;

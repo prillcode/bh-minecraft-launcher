@@ -14,6 +14,7 @@ export function EditInstanceModal({ instance, onClose, onUpdate }: Props) {
   );
   const [serverHost, setServerHost] = useState(instance.serverAutoConnect?.host ?? '');
   const [serverPort, setServerPort] = useState(String(instance.serverAutoConnect?.port ?? 25565));
+  const [serverVersion, setServerVersion] = useState(instance.serverMinecraftVersion ?? '');
   const [versions, setVersions] = useState<Array<{ id: string; releaseTime: string }>>([]);
   const [loadingVersions, setLoadingVersions] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -56,6 +57,7 @@ export function EditInstanceModal({ instance, onClose, onUpdate }: Props) {
         ...(serverHost.trim()
           ? { serverAutoConnect: { host: serverHost.trim(), port: parseInt(serverPort, 10) || 25565 } }
           : { serverAutoConnect: undefined }),
+        serverMinecraftVersion: serverVersion.trim() || undefined,
       };
       const updated = await window.launcher.instances.update(instance.id, config);
       onUpdate(updated);
@@ -139,6 +141,23 @@ export function EditInstanceModal({ instance, onClose, onUpdate }: Props) {
               />
             </div>
             <p className="form-group__hint">Leave host empty to remove auto-connect.</p>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="ei-server-version">
+              Server Minecraft Version{' '}
+              <span className="form-group__hint" style={{ display: 'inline' }}>(optional)</span>
+            </label>
+            <input
+              id="ei-server-version"
+              type="text"
+              value={serverVersion}
+              onChange={(e) => setServerVersion(e.target.value)}
+              placeholder="e.g. 1.21.1"
+            />
+            <p className="form-group__hint">
+              If set, you'll be warned before launching when your instance version differs.
+            </p>
           </div>
 
           {error && <p style={{ color: 'var(--danger)', fontSize: '12px', marginBottom: '12px' }}>{error}</p>}

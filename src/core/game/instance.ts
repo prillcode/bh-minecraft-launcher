@@ -57,6 +57,7 @@ export class InstanceManager {
       gameDirectory,
       resolution: config.resolution,
       serverAutoConnect: config.serverAutoConnect,
+      serverMinecraftVersion: config.serverMinecraftVersion,
       createdAt: Date.now(),
     };
 
