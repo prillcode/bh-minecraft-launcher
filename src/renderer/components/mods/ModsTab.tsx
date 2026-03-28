@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelectedInstance } from '../../stores/selected-instance-context';
 import { VersionPickerModal } from './VersionPickerModal';
 import { InstalledModsPanel } from './InstalledModsPanel';
+import { MOD_CATEGORIES } from '../../data/mod-categories';
 
 interface ModCardProps {
   mod: ModSearchHit;
@@ -41,6 +42,9 @@ export function ModsTab() {
   const [installingId, setInstallingId] = useState<string | null>(null);
   const [versionPickerMod, setVersionPickerMod] = useState<ModSearchHit | null>(null);
   const [installedRefreshKey, setInstalledRefreshKey] = useState(0);
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
+  const [categoryLoading, setCategoryLoading] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     window.launcher.instances.list().then(setInstances);
@@ -53,6 +57,29 @@ export function ModsTab() {
 
   const selectedInstance = instances.find((i) => i.id === selectedInstanceId) ?? null;
   const isVanilla = !selectedInstance || !selectedInstance.modLoader || selectedInstance.modLoader === 'vanilla';
+
+  const handleCategoryClick = async (categoryId: string) => {
+    if (!selectedInstanceId || isVanilla) return;
+
+    if (activeCategoryId === categoryId) {
+      setActiveCategoryId(null);
+      setResults([]);
+      return;
+    }
+
+    setActiveCategoryId(categoryId);
+    setQuery('');
+    setCategoryLoading(true);
+    try {
+      const category = MOD_CATEGORIES.find(c => c.id === categoryId)!;
+      const projects = await window.launcher.mods.getProjects(category.slugs);
+      setResults(projects);
+    } catch {
+      setResults([]);
+    } finally {
+      setCategoryLoading(false);
+    }
+  };
 
   const handleSearch = async () => {
     if (!selectedInstanceId) {
@@ -72,6 +99,7 @@ export function ModsTab() {
   };
 
   useEffect(() => {
+    if (query.length > 0) setActiveCategoryId(null);
     if (!selectedInstanceId || query.length < 2) {
       setResults([]);
       return;
@@ -106,9 +134,36 @@ export function ModsTab() {
         )}
       </div>
 
+      {selectedInstanceId && !isVanilla && (
+        <div className="category-chips">
+          <button
+            className={`category-chip ${activeCategoryId === null ? 'category-chip--active' : ''}`}
+            onClick={() => {
+              setActiveCategoryId(null);
+              setResults([]);
+              searchInputRef.current?.focus();
+            }}
+            disabled={categoryLoading}
+          >
+            Search All
+          </button>
+          {MOD_CATEGORIES.map((cat) => (
+            <button
+              key={cat.id}
+              className={`category-chip ${activeCategoryId === cat.id ? 'category-chip--active' : ''}`}
+              onClick={() => handleCategoryClick(cat.id)}
+              disabled={categoryLoading}
+            >
+              {categoryLoading && activeCategoryId === cat.id ? 'Loading…' : cat.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="mods__controls">
         <form className="mods__search-form" onSubmit={(e) => { e.preventDefault(); handleSearch(); }}>
           <input
+            ref={searchInputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}

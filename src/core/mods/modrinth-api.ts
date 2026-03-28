@@ -92,6 +92,17 @@ export class ModrinthAPI {
   }
 
   /**
+   * Fetch multiple projects by slug or ID in a single request.
+   * Modrinth: GET /v2/projects?ids=["slug1","slug2"]
+   */
+  async getProjects(slugs: string[]): Promise<ModrinthProject[]> {
+    if (slugs.length === 0) return [];
+    return this.client
+      .get('projects', { searchParams: { ids: JSON.stringify(slugs) } })
+      .json<ModrinthProject[]>();
+  }
+
+  /**
    * List versions of a project, optionally filtered.
    */
   async getVersions(

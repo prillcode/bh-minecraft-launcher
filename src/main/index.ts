@@ -1,8 +1,12 @@
 import 'dotenv/config';
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, protocol, net } from 'electron';
 import * as path from 'path';
 import { registerIpcHandlers } from './ipc-handlers';
 import { logger } from '../core/utils/logger';
+
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'launcher-file', privileges: { bypassCSP: true, stream: true } },
+]);
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -46,6 +50,11 @@ function createWindow(): void {
 app.whenReady().then(() => {
   registerIpcHandlers(ipcMain);
   createWindow();
+
+  protocol.handle('launcher-file', (request) => {
+    const filePath = decodeURIComponent(request.url.replace('launcher-file://', ''));
+    return net.fetch('file://' + filePath);
+  });
 
   app.on('activate', () => {
     // macOS: re-create window when dock icon clicked

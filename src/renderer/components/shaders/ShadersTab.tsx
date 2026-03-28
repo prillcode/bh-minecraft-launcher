@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSelectedInstance } from '../../stores/selected-instance-context';
 import { ShaderVersionPickerModal } from './ShaderVersionPickerModal';
 import { InstalledShadersPanel } from './InstalledShadersPanel';
+import { POPULAR_SHADER_SLUGS } from '../../data/popular-shaders';
 
 interface ShaderCardProps {
   shader: ModSearchHit;
@@ -36,6 +37,8 @@ export function ShadersTab() {
   const [shaderPickerMod, setShaderPickerMod] = useState<ModSearchHit | null>(null);
   const [installedRefreshKey, setInstalledRefreshKey] = useState(0);
   const [localInstalling, setLocalInstalling] = useState(false);
+  const [popularShaders, setPopularShaders] = useState<ModSearchHit[]>([]);
+  const [popularLoading, setPopularLoading] = useState(false);
 
   useEffect(() => {
     window.launcher.instances.list().then(setInstances);
@@ -49,6 +52,18 @@ export function ShadersTab() {
   const selectedInstance = instances.find((i) => i.id === selectedInstanceId) ?? null;
   const isSupported =
     selectedInstance?.modLoader === 'fabric' || selectedInstance?.modLoader === 'quilt';
+
+  useEffect(() => {
+    if (!selectedInstanceId || !isSupported) {
+      setPopularShaders([]);
+      return;
+    }
+    setPopularLoading(true);
+    window.launcher.mods.getProjects(POPULAR_SHADER_SLUGS)
+      .then(setPopularShaders)
+      .catch(() => setPopularShaders([]))
+      .finally(() => setPopularLoading(false));
+  }, [selectedInstanceId, isSupported]);
 
   const handleSearch = async () => {
     if (!selectedInstanceId) {
@@ -156,6 +171,25 @@ export function ShadersTab() {
           <p className="form-group__hint" style={{ marginTop: '8px' }}>
             Edit the instance and switch the Mod Loader to <strong>Fabric</strong> to enable shader support.
           </p>
+        </div>
+      )}
+
+      {isSupported && query.length === 0 && results.length === 0 && (
+        <div className="mods__section">
+          <h3 className="mods__section-title">Popular Shaders</h3>
+          {popularLoading ? (
+            <p className="mods__empty">Loading popular shaders…</p>
+          ) : (
+            <div className="mods__results">
+              {popularShaders.map((hit) => (
+                <ShaderCard
+                  key={hit.slug}
+                  shader={hit}
+                  onInstall={() => setShaderPickerMod(hit)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
