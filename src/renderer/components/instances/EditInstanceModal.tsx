@@ -8,8 +8,10 @@ interface Props {
 
 export function EditInstanceModal({ instance, onClose, onUpdate }: Props) {
   const [name, setName] = useState(instance.name);
-  const [instanceType, setInstanceType] = useState<'server' | 'singleplayer'>(
-    instance.type === 'singleplayer' ? 'singleplayer' : 'server',
+  const [instanceType, setInstanceType] = useState<'server' | 'singleplayer' | 'imported'>(
+    instance.type === 'singleplayer' ? 'singleplayer'
+    : instance.type === 'imported' ? 'imported'
+    : 'server',
   );
   const [versionId, setVersionId] = useState(instance.versionId);
   const [modLoader, setModLoader] = useState<'vanilla' | 'fabric' | 'quilt'>(
@@ -63,6 +65,10 @@ export function EditInstanceModal({ instance, onClose, onUpdate }: Props) {
           : { serverAutoConnect: undefined }),
         serverMinecraftVersion: instanceType === 'server' ? (serverVersion.trim() || undefined) : undefined,
       };
+      if (instanceType === 'imported') {
+        config.serverAutoConnect = undefined;
+        config.serverMinecraftVersion = undefined;
+      }
       const updated = await window.launcher.instances.update(instance.id, config);
       onUpdate(updated);
       onClose();
@@ -86,10 +92,11 @@ export function EditInstanceModal({ instance, onClose, onUpdate }: Props) {
             <select
               id="ei-type"
               value={instanceType}
-              onChange={(e) => setInstanceType(e.target.value as 'server' | 'singleplayer')}
+              onChange={(e) => setInstanceType(e.target.value as 'server' | 'singleplayer' | 'imported')}
             >
-              <option value="server">Server</option>
-              <option value="singleplayer">Singleplayer</option>
+              <option value="server">Multiplayer (remote/local server)</option>
+              <option value="singleplayer">New Singleplayer</option>
+              <option value="imported">Existing Singleplayer (import from other launcher)</option>
             </select>
           </div>
 
@@ -135,6 +142,21 @@ export function EditInstanceModal({ instance, onClose, onUpdate }: Props) {
               <option value="quilt">Quilt</option>
             </select>
           </div>
+
+          {instanceType === 'imported' && (
+            <div className="form-group">
+              <label>Game Directory</label>
+              <input
+                type="text"
+                value={instance.gameDirectory}
+                readOnly
+                style={{ opacity: 0.7, cursor: 'default' }}
+              />
+              <p className="form-group__hint">
+                Directory cannot be changed after import. Delete and re-import to use a different folder.
+              </p>
+            </div>
+          )}
 
           {instanceType === 'server' && (
             <>

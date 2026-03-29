@@ -7,11 +7,12 @@ interface Props {
 
 export function CreateInstanceModal({ onClose, onCreate }: Props) {
   const [name, setName] = useState('');
-  const [instanceType, setInstanceType] = useState<'server' | 'singleplayer'>('server');
+  const [instanceType, setInstanceType] = useState<'server' | 'singleplayer' | 'imported'>('server');
   const [versionId, setVersionId] = useState('');
   const [modLoader, setModLoader] = useState<'vanilla' | 'fabric' | 'quilt'>('vanilla');
   const [serverHost, setServerHost] = useState('');
   const [serverPort, setServerPort] = useState('25565');
+  const [importedDir, setImportedDir] = useState('');
   const [versions, setVersions] = useState<Array<{ id: string; releaseTime: string }>>([]);
   const [loadingVersions, setLoadingVersions] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -40,10 +41,23 @@ export function CreateInstanceModal({ onClose, onCreate }: Props) {
     if (e.target === overlayRef.current) onClose();
   };
 
+  const handlePickDirectory = async () => {
+    const selected = await window.launcher.instances.pickDirectory();
+    if (selected === null) return;
+    setImportedDir(selected);
+    if (!name.trim()) {
+      setName(selected.split('/').pop() ?? selected.split('\\').pop() ?? '');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       setError('Instance name is required.');
+      return;
+    }
+    if (instanceType === 'imported' && !importedDir) {
+      setError('Please select a game directory.');
       return;
     }
     setCreating(true);
@@ -57,6 +71,7 @@ export function CreateInstanceModal({ onClose, onCreate }: Props) {
         ...(instanceType === 'server' && serverHost.trim()
           ? { serverAutoConnect: { host: serverHost.trim(), port: parseInt(serverPort, 10) || 25565 } }
           : {}),
+        ...(instanceType === 'imported' ? { gameDirectory: importedDir } : {}),
       };
       const instance = await window.launcher.instances.create(config);
       onCreate(instance);
@@ -81,10 +96,11 @@ export function CreateInstanceModal({ onClose, onCreate }: Props) {
             <select
               id="ci-type"
               value={instanceType}
-              onChange={(e) => setInstanceType(e.target.value as 'server' | 'singleplayer')}
+              onChange={(e) => setInstanceType(e.target.value as 'server' | 'singleplayer' | 'imported')}
             >
-              <option value="server">Server</option>
-              <option value="singleplayer">Singleplayer</option>
+              <option value="server">Multiplayer (remote/local server)</option>
+              <option value="singleplayer">New Singleplayer</option>
+              <option value="imported">Existing Singleplayer (import from other launcher)</option>
             </select>
           </div>
 
@@ -153,6 +169,20 @@ export function CreateInstanceModal({ onClose, onCreate }: Props) {
                 />
               </div>
               <p className="form-group__hint">Leave host empty to skip auto-connect.</p>
+            </div>
+          )}
+
+          {instanceType === 'imported' && (
+            <div className="form-group">
+              <label>Game Directory</label>
+              <button type="button" className="btn btn--ghost" onClick={handlePickDirectory}>
+                Choose Folder
+              </button>
+              {importedDir ? (
+                <p className="form-group__hint" style={{ wordBreak: 'break-all' }}>{importedDir}</p>
+              ) : (
+                <p className="form-group__hint">Select the game directory of your existing Minecraft install</p>
+              )}
             </div>
           )}
 
