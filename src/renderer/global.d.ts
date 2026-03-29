@@ -83,6 +83,7 @@ interface LauncherAPI {
     set(key: keyof LauncherSettings, value: LauncherSettings[keyof LauncherSettings]): Promise<{ success: boolean }>;
     setDefaultAuthMode(mode: 'microsoft' | 'offline'): Promise<{ success: boolean }>;
     getAppInfo(): Promise<{ version: string; dataPath: string }>;
+    openExternal(url: string): Promise<{ success: boolean }>;
     openDataFolder(): Promise<{ success: boolean }>;
     clearCache(): Promise<{ success: boolean }>;
   };

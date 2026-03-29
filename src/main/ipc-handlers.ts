@@ -298,6 +298,11 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
     };
   });
 
+  ipcMain.handle('settings:open-external', async (_event, url: string) => {
+    await shell.openExternal(url);
+    return { success: true };
+  });
+
   ipcMain.handle('settings:open-data-folder', async () => {
     const paths = getLauncherPaths();
     await shell.openPath(paths.root);

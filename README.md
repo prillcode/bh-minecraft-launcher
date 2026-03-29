@@ -1,6 +1,10 @@
 # BlockHaven Launcher
 
-A custom Minecraft launcher built with Electron, React, and TypeScript. Features Microsoft authentication, multi-instance game management, Modrinth mod browsing, and auto-connect to your own servers.
+A free, open-source Minecraft launcher built with Electron, React, and TypeScript. Features Microsoft authentication, multi-instance game management, Modrinth mod browsing, and auto-connect to your own servers.
+
+![BlockHaven Launcher](resources/blockhaven-launcher-main.png)
+
+**[Download the latest release](https://github.com/prillcode/bh-minecraft-launcher/releases/latest)** · **[Sponsor this project](https://github.com/sponsors/prillcode)**
 
 ## Architecture
 
@@ -59,6 +63,7 @@ Set the client ID as an environment variable or replace the placeholder in `src/
 
 | Command | Description |
 |---|---|
+| `pnpm dev:all` | Start everything — TS watch + Vite dev + Electron (recommended) |
 | `pnpm dev` | Start Vite dev server + TypeScript watch for main process |
 | `pnpm start` | Launch Electron (run after `dev` or `build`) |
 | `pnpm build` | Production build (main + renderer) |
@@ -76,11 +81,7 @@ Set the client ID as an environment variable or replace the placeholder in `src/
 
 ## TODO
 
-- [ ] Wire up Azure AD client ID via `.env` file (currently hardcoded placeholder)
 - [ ] Implement conditional argument resolution in launch.ts (rule-based JVM/game args)
-- [ ] Add Fabric/Forge/Quilt mod loader installation (stubs exist)
-- [ ] Build settings persistence (Java path, memory, resolution)
-- [ ] Add instance import from existing `.minecraft` directory
 - [ ] Skin rendering on the account screen
 - [ ] Auto-updater via electron-updater
 - [ ] Tests for auth chain (mock the HTTP calls) and launch arg assembly

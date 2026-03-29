@@ -90,6 +90,7 @@ contextBridge.exposeInMainWorld('launcher', {
     set: (key: string, value: unknown) => ipcRenderer.invoke('settings:set', key, value),
     setDefaultAuthMode: (mode: string) => ipcRenderer.invoke('settings:set-default-auth-mode', mode),
     getAppInfo: () => ipcRenderer.invoke('settings:get-app-info'),
+    openExternal: (url: string) => ipcRenderer.invoke('settings:open-external', url),
     openDataFolder: () => ipcRenderer.invoke('settings:open-data-folder'),
     clearCache: () => ipcRenderer.invoke('settings:clear-cache'),
   },

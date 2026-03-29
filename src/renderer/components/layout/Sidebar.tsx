@@ -84,9 +84,11 @@ export function Sidebar() {
             <span className="sidebar__play-type">
               {selectedInstance.type === 'singleplayer'
                 ? 'Singleplayer'
-                : selectedInstance.serverAutoConnect
-                  ? `Multiplayer — ${selectedInstance.serverAutoConnect.host}`
-                  : 'Multiplayer'}
+                : selectedInstance.type === 'imported'
+                  ? 'Local Install'
+                  : selectedInstance.serverAutoConnect
+                    ? `Multiplayer — ${selectedInstance.serverAutoConnect.host}`
+                    : 'Multiplayer'}
             </span>
             <button
               className="sidebar__play-btn"
@@ -123,6 +125,12 @@ export function Sidebar() {
       </ul>
 
       <div className="sidebar__footer">
+        <button
+          className="sidebar__sponsor"
+          onClick={() => window.launcher.settings.openExternal('https://github.com/sponsors/prillcode')}
+        >
+          ♥ Sponsor this project
+        </button>
         <button
           className="sidebar__logout"
           onClick={() => window.launcher.auth.logout().then(() => window.location.reload())}
