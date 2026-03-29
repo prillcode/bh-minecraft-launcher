@@ -55,7 +55,7 @@ interface LauncherAPI {
     createBlockhaven(): Promise<InstanceInfo>;
     update(id: string, config: Partial<InstanceConfig>): Promise<InstanceInfo>;
     delete(id: string): Promise<{ success: boolean }>;
-    pickDirectory(): Promise<string | null>;
+    pickDirectory(defaultPath?: string): Promise<string | null>;
   };
   shaders: {
     search(query: string, instanceId: string): Promise<ModSearchResponse>;

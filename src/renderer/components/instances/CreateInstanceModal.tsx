@@ -183,6 +183,49 @@ export function CreateInstanceModal({ onClose, onCreate }: Props) {
               ) : (
                 <p className="form-group__hint">Select the game directory of your existing Minecraft install</p>
               )}
+              <details style={{ marginTop: '8px' }}>
+                <summary style={{ fontSize: '11px', color: 'var(--text-muted)', cursor: 'pointer', userSelect: 'none' }}>
+                  Or browse from a common location
+                </summary>
+                <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.8', maxHeight: '140px', overflowY: 'auto' }}>
+                  {[
+                    { group: 'Official Launcher (Mojang)', entries: [
+                      { label: 'Windows', path: '%APPDATA%\\.minecraft', navigateTo: '%APPDATA%\\.minecraft' },
+                      { label: 'macOS', path: '~/Library/Application Support/minecraft', navigateTo: '~/Library/Application Support/minecraft' },
+                      { label: 'Linux', path: '~/.minecraft', navigateTo: '~/.minecraft' },
+                      { label: 'Linux (Flatpak)', path: '~/.var/app/com.mojang.Minecraft/data/minecraft', navigateTo: '~/.var/app/com.mojang.Minecraft/data/minecraft' },
+                    ]},
+                    { group: 'Prism Launcher / MultiMC', entries: [
+                      { label: 'Windows', path: '%APPDATA%\\PrismLauncher\\instances\\<name>\\.minecraft', navigateTo: '%APPDATA%\\PrismLauncher\\instances' },
+                      { label: 'macOS', path: '~/Library/Application Support/PrismLauncher/instances/<name>/.minecraft', navigateTo: '~/Library/Application Support/PrismLauncher/instances' },
+                      { label: 'Linux', path: '~/.local/share/PrismLauncher/instances/<name>/.minecraft', navigateTo: '~/.local/share/PrismLauncher/instances' },
+                    ]},
+                    { group: 'ATLauncher', entries: [
+                      { label: 'Windows', path: '%APPDATA%\\ATLauncher\\instances\\<name>', navigateTo: '%APPDATA%\\ATLauncher\\instances' },
+                      { label: 'macOS', path: '~/Library/Application Support/ATLauncher/instances/<name>', navigateTo: '~/Library/Application Support/ATLauncher/instances' },
+                      { label: 'Linux', path: '~/.ATLauncher/instances/<name>', navigateTo: '~/.ATLauncher/instances' },
+                    ]},
+                  ].map(({ group, entries }) => (
+                    <div key={group} style={{ marginBottom: '8px' }}>
+                      <p style={{ fontWeight: 600, marginBottom: '2px' }}>{group}</p>
+                      {entries.map(({ label, path, navigateTo }) => (
+                        <code
+                          key={label}
+                          title="Click to open folder picker here"
+                          style={{ display: 'block', cursor: 'pointer' }}
+                          onClick={() => window.launcher.instances.pickDirectory(navigateTo).then((selected) => {
+                            if (!selected) return;
+                            setImportedDir(selected);
+                            if (!name.trim()) setName(selected.split('/').pop() ?? selected.split('\\').pop() ?? '');
+                          })}
+                        >
+                          {label}: {path}
+                        </code>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </details>
             </div>
           )}
 

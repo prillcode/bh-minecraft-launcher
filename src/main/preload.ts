@@ -42,7 +42,7 @@ contextBridge.exposeInMainWorld('launcher', {
     createBlockhaven: () => ipcRenderer.invoke('instances:create-blockhaven'),
     update: (id: string, config: unknown) => ipcRenderer.invoke('instances:update', id, config),
     delete: (id: string) => ipcRenderer.invoke('instances:delete', id),
-    pickDirectory: () => ipcRenderer.invoke('instances:pick-directory'),
+    pickDirectory: (defaultPath?: string) => ipcRenderer.invoke('instances:pick-directory', defaultPath),
   },
 
   // ── Mods ──────────────────────────────────────────────────────

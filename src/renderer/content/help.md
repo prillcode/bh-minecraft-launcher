@@ -2,7 +2,7 @@
 
 ## Getting Started
 
-BlockHaven Launcher is a custom Minecraft launcher built for the BlockHaven SMP community. It handles Microsoft authentication, instance management, mod installation, and shader packs — all in one place.
+BlockHaven Launcher is a custom Minecraft launcher built for the Minecraft java community. It handles Microsoft authentication, instance management, mod installation, and shader packs — all in one place.
 
 ### First Launch
 

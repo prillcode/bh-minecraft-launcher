@@ -257,12 +257,17 @@ export function registerIpcHandlers(ipcMain: IpcMain): void {
     return { success: true };
   });
 
-  ipcMain.handle('instances:pick-directory', async () => {
+  ipcMain.handle('instances:pick-directory', async (_event, defaultPath?: string) => {
     const win = BrowserWindow.getFocusedWindow();
+    // Expand ~ and %APPDATA% so the picker opens in the right place
+    const expandedDefault = defaultPath
+      ?.replace(/^~/, require('os').homedir())
+      .replace(/^%APPDATA%/i, process.env.APPDATA ?? require('os').homedir());
     const result = await dialog.showOpenDialog(win ?? new BrowserWindow(), {
       title: 'Select Minecraft Game Directory',
-      properties: ['openDirectory'],
+      properties: ['openDirectory', 'showHiddenFiles'],
       buttonLabel: 'Select Folder',
+      defaultPath: expandedDefault,
     });
     if (result.canceled || result.filePaths.length === 0) return null;
     return result.filePaths[0];
