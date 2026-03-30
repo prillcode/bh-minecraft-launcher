@@ -8,7 +8,7 @@ A free, open-source Minecraft launcher built with Electron, React, and TypeScrip
 
 ## For Players
 
-Just want to use the launcher? Download the installer for your OS from the [Releases page](https://github.com/prillcode/bh-minecraft-launcher/releases/latest) — no build steps required.
+Just want to use the launcher? Download the installer for your OS from the [Releases page](https://github.com/prillcode/bh-minecraft-launcher/releases/latest) — no build steps required. See the [User Guide](src/renderer/content/help.md) for usage instructions.
 
 | Platform | File |
 |---|---|
