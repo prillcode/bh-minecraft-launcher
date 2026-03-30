@@ -6,6 +6,22 @@ A free, open-source Minecraft launcher built with Electron, React, and TypeScrip
 
 **[Download the latest release](https://github.com/prillcode/bh-minecraft-launcher/releases/latest)** · **[Sponsor this project](https://github.com/sponsors/prillcode)**
 
+## For Players
+
+Just want to use the launcher? Download the installer for your OS from the [Releases page](https://github.com/prillcode/bh-minecraft-launcher/releases/latest) — no build steps required.
+
+| Platform | File |
+|---|---|
+| Windows | `.exe` installer |
+| macOS | `.dmg` |
+| Linux | `.deb` (recommended) or `.AppImage` |
+
+---
+
+## For Developers
+
+The sections below are for building the launcher from source — forking it, customizing it, or contributing to it.
+
 ## Architecture
 
 ```
@@ -28,7 +44,7 @@ The `core/` layer is intentionally decoupled from Electron — it could be reuse
 - **Java** 17+ (for actually running Minecraft)
 - **Azure AD App Registration** (for Microsoft OAuth — see below)
 
-## Quick Start
+## Building from Source
 
 ```bash
 # Install dependencies
